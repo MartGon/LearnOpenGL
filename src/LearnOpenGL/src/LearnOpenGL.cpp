@@ -57,6 +57,23 @@ unsigned int CreateProgram(std::vector<Shader> shaders)
     return program;
 }
 
+unsigned int CreateVertexArray(float* vertices, unsigned int size)
+{
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+    
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    glEnableVertexAttribArray(0);
+
+    return VAO;
+}
+
 int main()
 {
     std::cout << "Hello world!\n";
@@ -81,16 +98,15 @@ int main()
             glViewport(0, 0, 640, 480);
 
             // Vertices
-            float vertices[] = {
-                -0.5f, 0.5f, 0.0f,  // up left
-                -0.5f, -0.5f, 0.0f, // down left
-                0.5f, -0.5f, 0.0f, // down right
-                0.5f, 0.5f, 0.0f // up right
+            float verticesTri1[] = {
+                0.0f, 0.75f, 0.0f,  // up
+                -0.5f, 0.15f, 0.0f, // down left
+                0.5f, 0.15f, 0.0f, // down right
             };
-            unsigned int indices[] = 
-            {
-                0, 1, 3,
-                1, 2, 3
+            float verticesTri2[] = {
+                0.0f, -0.75f, 0.0f,  // down
+                -0.5f, -0.15f, 0.0f, // up left
+                0.5f, -0.15f, 0.0f, // up right
             };
 
             const char* vertexShaderSrc = R"axy(
@@ -118,22 +134,8 @@ int main()
             unsigned int program = CreateProgram({vertexShader, fragmentShader});
             glUseProgram(program);
 
-            unsigned int VAO;
-            glGenVertexArrays(1, &VAO);
-            glBindVertexArray(VAO);
-            
-            unsigned int VBO;
-            glGenBuffers(1, &VBO);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-            unsigned int EBO;
-            glGenBuffers(1, &EBO);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-            glEnableVertexAttribArray(0);
+            auto VAOtri1 = CreateVertexArray(verticesTri1, sizeof(verticesTri1));
+            auto VAOtri2 = CreateVertexArray(verticesTri2, sizeof(verticesTri2));
 
             // Draw loop
             while(!glfwWindowShouldClose(window))
@@ -147,7 +149,11 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 // Draw
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                glBindVertexArray(VAOtri1);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+
+                glBindVertexArray(VAOtri2);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
 
                 glfwPollEvents();
                 
