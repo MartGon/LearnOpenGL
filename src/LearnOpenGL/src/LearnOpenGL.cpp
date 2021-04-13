@@ -131,8 +131,19 @@ int main()
             )";
             Shader fragmentShader{GL_FRAGMENT_SHADER, fragmentShaderSrc};
 
+            const char* fragmentShader2Src = R"(
+                #version 460 core
+                out vec4 fragColor;
+
+                void main()
+                {
+                    fragColor = vec4(1.0f, 1.0f, 0.2f, 1.0f);
+                }
+            )";
+            Shader fragmentShader2{GL_FRAGMENT_SHADER, fragmentShader2Src};
+
             unsigned int program = CreateProgram({vertexShader, fragmentShader});
-            glUseProgram(program);
+            unsigned int program2 = CreateProgram({vertexShader, fragmentShader2});
 
             auto VAOtri1 = CreateVertexArray(verticesTri1, sizeof(verticesTri1));
             auto VAOtri2 = CreateVertexArray(verticesTri2, sizeof(verticesTri2));
@@ -149,9 +160,11 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 // Draw
+                glUseProgram(program);
                 glBindVertexArray(VAOtri1);
                 glDrawArrays(GL_TRIANGLES, 0, 3);
 
+                glUseProgram(program2);
                 glBindVertexArray(VAOtri2);
                 glDrawArrays(GL_TRIANGLES, 0, 3);
 
