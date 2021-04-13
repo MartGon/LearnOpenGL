@@ -2,6 +2,60 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <vector>
+
+
+struct Shader
+{
+    GLenum type;
+    const char* source;
+    unsigned int ref;
+};
+
+unsigned int CreateProgram(std::vector<Shader> shaders)
+{
+    unsigned int program =  glCreateProgram();
+    for(auto shader : shaders)
+    {
+        shader.ref = glCreateShader(shader.type);
+        glShaderSource(shader.ref, 1, &shader.source, 0);
+        glCompileShader(shader.ref);
+
+        int sucess = false;
+        glGetShaderiv(shader.ref, GL_COMPILE_STATUS, &sucess);
+        if(sucess)
+        {
+            glAttachShader(program, shader.ref);
+        }
+        else
+        {
+            char infoLog[512];
+            glGetShaderInfoLog(shader.ref, 512, NULL, infoLog);
+            std::cout << "Error while compiling shader " << infoLog << '\n';
+            exit(-1);
+        }
+    }
+
+    glLinkProgram(program);
+    int status = 0;
+    glGetProgramiv(program, GL_LINK_STATUS, &status);
+    if(status)
+    {
+        for(auto shader : shaders)
+        {
+            glDeleteShader(shader.ref);
+        }
+    }
+    else
+    {
+        char infoLog[512];
+        glGetProgramInfoLog(program, 512, NULL, infoLog);
+        std::cout << "Error while linking program " << infoLog << '\n';
+        exit(-1);
+    }
+
+    return program;
+}
 
 int main()
 {
@@ -26,18 +80,69 @@ int main()
         {
             glViewport(0, 0, 640, 480);
 
+            // Vertices
+            float vertices[] = {
+                0.0f, 0.5f, 0.0f,
+                -0.5f, -0.5f, 0.0f,
+                0.5f, -0.5f, 0.0f
+            };
+
+            const char* vertexShaderSrc = R"axy(
+                #version 460 core
+                layout (location = 0) in vec3 aPos;
+
+                void main()
+                {
+                    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);
+                }
+            )axy";
+            Shader vertexShader{GL_VERTEX_SHADER, vertexShaderSrc};
+
+            const char* fragmentShaderSrc = R"(
+                #version 460 core
+                out vec4 fragColor;
+
+                void main()
+                {
+                    fragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+                }
+            )";
+            Shader fragmentShader{GL_FRAGMENT_SHADER, fragmentShaderSrc};
+
+            unsigned int program = CreateProgram({vertexShader, fragmentShader});
+            glUseProgram(program);
+
+            unsigned int VAO;
+            glGenVertexArrays(1, &VAO);
+
+            unsigned int VBO;
+            glGenBuffers(1, &VBO);
+            
+            glBindVertexArray(VAO);
+            
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+            glEnableVertexAttribArray(0);
+
+            // Draw loop
             while(!glfwWindowShouldClose(window))
             {   
                 // Window Input
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
 
-                // Render
+                // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT);
 
+                // Draw
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+
+                glfwPollEvents();
+                
                 // Swap buffers
-                glfwPollEvents();  
                 glfwSwapBuffers(window);  
             }
         }
