@@ -82,10 +82,13 @@ int main()
 
             // Vertices
             float vertices[] = {
-                -0.5f, 0.5f, 0.0f,  // up left
-                -0.5f, -0.5f, 0.0f, // down left
-                0.5f, -0.5f, 0.0f, // down right
-                0.5f, 0.5f, 0.0f // up right
+                0, 0.75f, 0,
+                -0.5f, 0.10, 0,
+                0.5f, 0.10, 0,
+
+                0, -0.75f, 0,
+                -0.5f, -0.10f, 0,
+                0.5f, -0.10f, 0
             };
             unsigned int indices[] = 
             {
@@ -127,10 +130,12 @@ int main()
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+            /*
             unsigned int EBO;
             glGenBuffers(1, &EBO);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+            */
 
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
             glEnableVertexAttribArray(0);
@@ -147,7 +152,7 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 // Draw
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
 
                 glfwPollEvents();
                 
