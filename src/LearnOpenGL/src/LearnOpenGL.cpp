@@ -83,10 +83,11 @@ int main()
 
             // Vertices
             float vertices[] = {
-                -0.5f, 0.5f, 0.0f,  // up left
-                -0.5f, -0.5f, 0.0f, // down left
-                0.5f, -0.5f, 0.0f, // down right
-                0.5f, 0.5f, 0.0f // up right
+                // Vertex               // Color
+                -0.5f, 0.5f, 0.0f,     1.0f, 1.0f, 1.0f,
+                -0.5f, -0.5f, 0.0f,    .0f, .0f, .0f,
+                0.5f, -0.5f, 0.0f,     .0f, .0f, .0f,
+                0.5f, 0.5f, 0.0f,      1.0f, 1.0f, 1.0f
             };
             unsigned int indices[] = 
             {
@@ -97,10 +98,14 @@ int main()
             const char* vertexShaderSrc = R"axy(
                 #version 460 core
                 layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec3 aColor;
+
+                out vec3 ourColor;
 
                 void main()
                 {
                     gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);
+                    ourColor = aColor;
                 }
             )axy";
             Shader vertexShader{GL_VERTEX_SHADER, vertexShaderSrc};
@@ -109,17 +114,16 @@ int main()
                 #version 460 core
                 out vec4 fragColor;
 
-                uniform vec4 setColor;
+                in vec3 ourColor;
 
                 void main()
                 {
-                    fragColor = setColor;
+                    fragColor = vec4(ourColor, 1.0f);
                 }
             )";
             Shader fragmentShader{GL_FRAGMENT_SHADER, fragmentShaderSrc};
 
             unsigned int program = CreateProgram({vertexShader, fragmentShader});
-            unsigned int uLocation = glGetUniformLocation(program, "setColor");
             glUseProgram(program);
 
             unsigned int VAO;
@@ -136,8 +140,10 @@ int main()
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
             glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
 
             // Draw loop
             while(!glfwWindowShouldClose(window))
@@ -151,9 +157,6 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 // Draw
-                float green = std::sin(glfwGetTime()) / 2.0f + 0.5f;
-                glUniform4f(uLocation, 0, green, 0, 1);
-
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
                 glfwPollEvents();
