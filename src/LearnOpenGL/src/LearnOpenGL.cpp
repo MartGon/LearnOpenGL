@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 
 struct Shader
@@ -108,14 +109,17 @@ int main()
                 #version 460 core
                 out vec4 fragColor;
 
+                uniform vec4 setColor;
+
                 void main()
                 {
-                    fragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+                    fragColor = setColor;
                 }
             )";
             Shader fragmentShader{GL_FRAGMENT_SHADER, fragmentShaderSrc};
 
             unsigned int program = CreateProgram({vertexShader, fragmentShader});
+            unsigned int uLocation = glGetUniformLocation(program, "setColor");
             glUseProgram(program);
 
             unsigned int VAO;
@@ -147,6 +151,9 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 // Draw
+                float green = std::sin(glfwGetTime()) / 2.0f + 0.5f;
+                glUniform4f(uLocation, 0, green, 0, 1);
+
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
                 glfwPollEvents();
