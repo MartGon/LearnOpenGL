@@ -84,15 +84,13 @@ int main()
             // Vertices
             float vertices[] = {
                 // Vertex               // Color
-                -0.5f, 0.5f, 0.0f,     1.0f, 1.0f, 1.0f,
+                0.0f, 0.5f, 0.0f,     1.0f, 1.0f, 1.0f,
                 -0.5f, -0.5f, 0.0f,    .0f, .0f, .0f,
                 0.5f, -0.5f, 0.0f,     .0f, .0f, .0f,
-                0.5f, 0.5f, 0.0f,      1.0f, 1.0f, 1.0f
             };
             unsigned int indices[] = 
             {
-                0, 1, 3,
-                1, 2, 3
+                0, 1, 2
             };
 
             const char* vertexShaderSrc = R"axy(
@@ -105,7 +103,7 @@ int main()
                 void main()
                 {
                     gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);
-                    ourColor = aColor;
+                    ourColor = aPos;
                 }
             )axy";
             Shader vertexShader{GL_VERTEX_SHADER, vertexShaderSrc};
@@ -157,7 +155,7 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 // Draw
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
                 glfwPollEvents();
                 
@@ -170,3 +168,12 @@ int main()
     // Close
     glfwTerminate();
 }
+
+/*
+// ..:: Explanation ::..
+
+The bottom left side of the triangle is black because their colo values of the bottom left vertes is (-0.5, -0.5, 0f), which is rounded to (0.0f, 0.0f, 0f) (black) because
+negative values are not valid colors. Around the bottom middle, the triangle color begins to become red due to interpolation with the bottom right vertex color (0.5f, 0.0f, 0.0f).
+The very same thing happens to the top vertex.
+
+*/
