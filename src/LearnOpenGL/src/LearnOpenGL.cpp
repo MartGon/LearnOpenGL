@@ -1,64 +1,15 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <filesystem>
 
 #include <Shader.h>
-
-
-struct Shader
-{
-    GLenum type;
-    const char* source;
-    unsigned int ref;
-};
-
-unsigned int CreateProgram(std::vector<Shader> shaders)
-{
-    unsigned int program =  glCreateProgram();
-    for(auto shader : shaders)
-    {
-        shader.ref = glCreateShader(shader.type);
-        glShaderSource(shader.ref, 1, &shader.source, 0);
-        glCompileShader(shader.ref);
-
-        int sucess = false;
-        glGetShaderiv(shader.ref, GL_COMPILE_STATUS, &sucess);
-        if(sucess)
-        {
-            glAttachShader(program, shader.ref);
-        }
-        else
-        {
-            char infoLog[512];
-            glGetShaderInfoLog(shader.ref, 512, NULL, infoLog);
-            std::cout << "Error while compiling shader " << infoLog << '\n';
-            exit(-1);
-        }
-    }
-
-    glLinkProgram(program);
-    int status = 0;
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    if(status)
-    {
-        for(auto shader : shaders)
-        {
-            glDeleteShader(shader.ref);
-        }
-    }
-    else
-    {
-        char infoLog[512];
-        glGetProgramInfoLog(program, 512, NULL, infoLog);
-        std::cout << "Error while linking program " << infoLog << '\n';
-        exit(-1);
-    }
-
-    return program;
-}
 
 int main()
 {
@@ -85,11 +36,11 @@ int main()
 
             // Vertices
             float vertices[] = {
-                // Vertex               // Color
-                -0.5f, 0.5f, 0.0f,     1.0f, 1.0f, 1.0f,
-                -0.5f, -0.5f, 0.0f,    .0f, .0f, .0f,
-                0.5f, -0.5f, 0.0f,     .0f, .0f, .0f,
-                0.5f, 0.5f, 0.0f,      1.0f, 1.0f, 1.0f
+                // Vertex               // Color            // Texture Coords
+                -0.5f, 0.5f, 0.0f,     1.0f, .0f, 1.0f,    0.0f, 1.0f,
+                -0.5f, -0.5f, 0.0f,    .0f, 1.0f, .0f,       0.0f, 0.0f,
+                0.5f, -0.5f, 0.0f,     .0f, .0f, 1.0f,       1.0f, 0.0f,
+                0.5f, 0.5f, 0.0f,      1.0f, 1.0f, .0f,    1.0f, 1.0f
             };
             unsigned int indices[] = 
             {
@@ -97,37 +48,37 @@ int main()
                 1, 2, 3
             };
 
-            const char* vertexShaderSrc = R"axy(
-                #version 460 core
-                layout (location = 0) in vec3 aPos;
-                layout (location = 1) in vec3 aColor;
+            // Shader program
+            std::filesystem::path shaderFolder{SHADERS_DIR};
+            std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
+            std::filesystem::path fragPath = shaderFolder / "fragment.glsl";
+            LearnOpenGL::Shader shaderProg{vertexPath.c_str(), fragPath.c_str()};
+            shaderProg.use();
 
-                out vec3 ourColor;
+            // Texture loading
+            std::filesystem::path textureFolder{TEXTURES_DIR};
+            std::filesystem::path texturePath = textureFolder / "container.jpg";
 
-                void main()
-                {
-                    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0f);
-                    ourColor = aColor;
-                }
-            )axy";
-            Shader vertexShader{GL_VERTEX_SHADER, vertexShaderSrc};
+            int w, h;
+            int channels;
+            unsigned char* textureData = stbi_load(texturePath.c_str(), &w, &h, &channels, 0);
 
-            const char* fragmentShaderSrc = R"(
-                #version 460 core
-                out vec4 fragColor;
+            stbi_image_free(textureData);
 
-                in vec3 ourColor;
+            // OpenGL Teture
+            unsigned int texture;
+            glGenTextures(1, &texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
 
-                void main()
-                {
-                    fragColor = vec4(ourColor, 1.0f);
-                }
-            )";
-            Shader fragmentShader{GL_FRAGMENT_SHADER, fragmentShaderSrc};
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-            unsigned int program = CreateProgram({vertexShader, fragmentShader});
-            glUseProgram(program);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+            glGenerateMipmap(GL_TEXTURE_2D);
 
+            // VAOs
             unsigned int VAO;
             glGenVertexArrays(1, &VAO);
             glBindVertexArray(VAO);
@@ -142,10 +93,13 @@ int main()
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), nullptr);
+            // Vertex Attributes
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+            glEnableVertexAttribArray(2);
 
             // Draw loop
             while(!glfwWindowShouldClose(window))
@@ -159,6 +113,7 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT);
 
                 // Draw
+                // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
                 glfwPollEvents();

@@ -9,5 +9,9 @@ set (CMAKE_CXX_STANDARD 17)
 
 set(DEPS_FOLDER ${CMAKE_CURRENT_SOURCE_DIR}/deps)
 
+add_compile_definitions(RESOURCES_DIR="${CMAKE_SOURCE_DIR}/resources/")
+add_compile_definitions(SHADERS_DIR="${CMAKE_SOURCE_DIR}/resources/shaders/")
+add_compile_definitions(TEXTURES_DIR="${CMAKE_SOURCE_DIR}/resources/textures/")
+
 add_subdirectory(deps)
 add_subdirectory(src)
