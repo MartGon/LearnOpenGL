@@ -11,6 +11,24 @@
 
 #include <Shader.h>
 
+unsigned int GenTexture(unsigned char* data, int w, int h, int textureUnit = GL_TEXTURE0, int format = GL_RGB)
+{
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glActiveTexture(textureUnit);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, format, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    return texture;
+}
+
 int main()
 {
     std::cout << "Hello world!\n";
@@ -58,25 +76,22 @@ int main()
             // Texture loading
             std::filesystem::path textureFolder{TEXTURES_DIR};
             std::filesystem::path texturePath = textureFolder / "container.jpg";
+            std::filesystem::path facePath = textureFolder / "awesomeface.png";
+            stbi_set_flip_vertically_on_load(true);  
 
             int w, h;
             int channels;
             unsigned char* textureData = stbi_load(texturePath.c_str(), &w, &h, &channels, 0);
 
+            // OpenGL Texture
+            auto texture = GenTexture(textureData, w, h, GL_TEXTURE0);
             stbi_image_free(textureData);
 
-            // OpenGL Teture
-            unsigned int texture;
-            glGenTextures(1, &texture);
-            glBindTexture(GL_TEXTURE_2D, texture);
+            textureData = stbi_load(facePath.c_str(), &w, &h, &channels, 0);
+            auto texture2 = GenTexture(textureData, w, h, GL_TEXTURE1, GL_RGBA);
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
-            glGenerateMipmap(GL_TEXTURE_2D);
+            shaderProg.setInt("ourTexture1", 0);
+            shaderProg.setInt("ourTexture2", 1);
 
             // VAOs
             unsigned int VAO;
