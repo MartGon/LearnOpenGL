@@ -55,10 +55,10 @@ int main()
             // Vertices
             float vertices[] = {
                // positions          // colors           // texture coords (note that we changed them to 'zoom in' on our texture image)
-                0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   0.55f, 0.55f, // top right
-                0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   0.55f, 0.45f, // bottom right
-                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.45f, 0.45f, // bottom left
-                -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.45f, 0.55f  // top left 
+                0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.f, 1.f, // top right
+                0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.f, 0.0f, // bottom right
+                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+                -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left 
             };
             unsigned int indices[] = 
             {
@@ -92,6 +92,8 @@ int main()
 
             shaderProg.setInt("ourTexture1", 0);
             shaderProg.setInt("ourTexture2", 1);
+            float mixRatio = 0.3f;
+            const float MOD_RATE =  0.05f;
 
             // VAOs
             unsigned int VAO;
@@ -126,6 +128,13 @@ int main()
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT);
+
+                // Mod mixRatio
+                if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && mixRatio < (1 - MOD_RATE))
+                    mixRatio += MOD_RATE;
+                else if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && mixRatio > MOD_RATE)
+                    mixRatio -= MOD_RATE;
+                shaderProg.setFloat("mixRatio", mixRatio);
 
                 // Draw
                 // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
