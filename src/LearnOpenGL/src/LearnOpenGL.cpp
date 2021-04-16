@@ -20,8 +20,8 @@ unsigned int GenTexture(unsigned char* data, int w, int h, int textureUnit = GL_
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -54,11 +54,11 @@ int main()
 
             // Vertices
             float vertices[] = {
-                // Vertex               // Color            // Texture Coords
-                -0.5f, 0.5f, 0.0f,     1.0f, .0f, 1.0f,    0.0f, 1.0f,
-                -0.5f, -0.5f, 0.0f,    .0f, 1.0f, .0f,       0.0f, 0.0f,
-                0.5f, -0.5f, 0.0f,     .0f, .0f, 1.0f,       1.0f, 0.0f,
-                0.5f, 0.5f, 0.0f,      1.0f, 1.0f, .0f,    1.0f, 1.0f
+               // positions          // colors           // texture coords (note that we changed them to 'zoom in' on our texture image)
+                0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   0.55f, 0.55f, // top right
+                0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   0.55f, 0.45f, // bottom right
+                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.45f, 0.45f, // bottom left
+                -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.45f, 0.55f  // top left 
             };
             unsigned int indices[] = 
             {
