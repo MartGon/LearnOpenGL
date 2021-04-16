@@ -85,6 +85,8 @@ int main()
 
             // OpenGL Texture
             auto texture = GenTexture(textureData, w, h, GL_TEXTURE0);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             stbi_image_free(textureData);
 
             textureData = stbi_load(facePath.c_str(), &w, &h, &channels, 0);
