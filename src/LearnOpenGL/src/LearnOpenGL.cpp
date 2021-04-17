@@ -4,6 +4,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -92,6 +96,14 @@ int main()
 
             shaderProg.setInt("ourTexture1", 0);
             shaderProg.setInt("ourTexture2", 1);
+
+            // Transforms
+            glm::mat4 transform{1.0f};
+            transform = glm::rotate(transform, glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f});
+            transform = glm::scale(transform, glm::vec3{0.5, 0.5, 1});
+
+            unsigned int transformLoc = glGetUniformLocation(shaderProg.ID, "transform");
+            glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
             // VAOs
             unsigned int VAO;
