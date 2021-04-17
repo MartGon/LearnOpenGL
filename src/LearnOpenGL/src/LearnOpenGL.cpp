@@ -127,6 +127,9 @@ int main()
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
 
+                // Clear
+                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT);
 
                 // Transform
                 glm::mat4 transform{1.0f};
@@ -136,14 +139,23 @@ int main()
                 unsigned int transformLoc = glGetUniformLocation(shaderProg.ID, "transform");
                 glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
-                // Clear
-                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT);
+                // Draw
+                // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                
+                // Transform
+                transform = glm::mat4{1.0f};
+                transform = glm::translate(transform, glm::vec3{-0.5f, 0.5f, 0.f});
+                float scale = std::sin(glfwGetTime());
+                transform = glm::scale(transform, glm::vec3(scale, scale, 1.f));
+                
+                glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
                 // Draw
                 // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
                 glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+                // Poll
                 glfwPollEvents();
                 
                 // Swap buffers
