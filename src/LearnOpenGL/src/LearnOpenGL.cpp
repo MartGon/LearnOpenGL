@@ -97,14 +97,6 @@ int main()
             shaderProg.setInt("ourTexture1", 0);
             shaderProg.setInt("ourTexture2", 1);
 
-            // Transforms
-            glm::mat4 transform{1.0f};
-            transform = glm::rotate(transform, glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f});
-            transform = glm::scale(transform, glm::vec3{0.5, 0.5, 1});
-
-            unsigned int transformLoc = glGetUniformLocation(shaderProg.ID, "transform");
-            glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
-
             // VAOs
             unsigned int VAO;
             glGenVertexArrays(1, &VAO);
@@ -134,6 +126,15 @@ int main()
                 // Window Input
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
+
+
+                // Transform
+                glm::mat4 transform{1.0f};
+                transform = glm::translate(transform, glm::vec3{0.5f, -0.5f, 0.f});
+                transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3{0, 0, 1.f});
+
+                unsigned int transformLoc = glGetUniformLocation(shaderProg.ID, "transform");
+                glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
 
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
