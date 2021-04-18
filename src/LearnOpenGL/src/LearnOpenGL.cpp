@@ -179,6 +179,8 @@ int main()
             glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
 
+            auto fov = 45.0f;
+            auto fovRate = 3.0f;
             // Draw loop
             while(!glfwWindowShouldClose(window))
             {   
@@ -190,21 +192,30 @@ int main()
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+                if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+                    fov += fovRate;
+                else if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+                    fov -= fovRate;
+
                 // Projection
-                auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
+                auto projection = glm::perspective(glm::radians(fov),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
                 shaderProg.setMatrix("projection", glm::value_ptr(projection));
 
                 // Rotation
                 for(auto i = 0; i < 10; i++)
                 {
-                    auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
-                    float angle = glm::radians(20.0f * i);
-                    model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
-                    shaderProg.setMatrix("model", glm::value_ptr(model));
+                    for(auto y = -3; y < 3; y++)
+                    {
+                        auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
+                        float angle = glm::radians(20.0f * i);
+                        model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
+                        model = glm::translate(model, glm::vec3{3.0f, 3.0f, 3.0f} * (float)y);
+                        shaderProg.setMatrix("model", glm::value_ptr(model));
 
-                    // Draw
-                    // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
-                    glDrawArrays(GL_TRIANGLES, 0, 36);
+                        // Draw
+                        // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                        glDrawArrays(GL_TRIANGLES, 0, 36);
+                    }
                 }
 
                 glfwPollEvents();
