@@ -33,6 +33,9 @@ unsigned int GenTexture(unsigned char* data, int w, int h, int textureUnit = GL_
     return texture;
 }
 
+int WINDOW_WIDTH = 640;
+int WINDOW_HEIGHT = 480;
+
 int main()
 {
     std::cout << "Hello world!\n";
@@ -45,16 +48,18 @@ int main()
 
     auto window = glfwCreateWindow(640, 480, "Window", NULL, NULL);
     if(window)
-    {
+    {   
         glfwMakeContextCurrent(window);
         glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height)
         {
+            WINDOW_WIDTH = width;
+            WINDOW_HEIGHT = height;
             glViewport(0, 0, width, height);
         });  
 
         if(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
-            glViewport(0, 0, 640, 480);
+            glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
             // Vertices
             float vertices[] = {
@@ -97,6 +102,15 @@ int main()
             shaderProg.setInt("ourTexture1", 0);
             shaderProg.setInt("ourTexture2", 1);
 
+            // Transformations
+            auto model = glm::rotate(glm::mat4{1.0f}, glm::radians(-55.0f), glm::vec3{1.0f, 0.f, 0.f});
+            auto view = glm::translate(glm::mat4{1.0f}, glm::vec3{0, 0, -3.0f});
+            auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
+
+            shaderProg.setMatrix("model", glm::value_ptr(model));
+            shaderProg.setMatrix("view", glm::value_ptr(view));
+
+
             // VAOs
             unsigned int VAO;
             glGenVertexArrays(1, &VAO);
@@ -127,14 +141,9 @@ int main()
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
 
-
-                // Transform
-                glm::mat4 transform{1.0f};
-                transform = glm::translate(transform, glm::vec3{0.5f, -0.5f, 0.f});
-                transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3{0, 0, 1.f});
-
-                unsigned int transformLoc = glGetUniformLocation(shaderProg.ID, "transform");
-                glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+                // Projection
+                auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
+                shaderProg.setMatrix("projection", glm::value_ptr(projection));
 
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);

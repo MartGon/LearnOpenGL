@@ -95,6 +95,11 @@ namespace LearnOpenGL
             glUniform1f(glGetUniformLocation(ID, name.c_str()), value); 
         }
 
+        void setMatrix(const std::string &name, float* matrix) const
+        {
+            glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, matrix);
+        }
+
     private:
         // utility function for checking shader compilation/linking errors.
         // ------------------------------------------------------------------------
