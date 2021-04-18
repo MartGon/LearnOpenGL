@@ -59,15 +59,51 @@ int main()
 
         if(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
+            glEnable(GL_DEPTH_TEST);
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-            // Vertices
             float vertices[] = {
-                // Vertex               // Color            // Texture Coords
-                -0.5f, 0.5f, 0.0f,     1.0f, .0f, 1.0f,    0.0f, 1.0f,
-                -0.5f, -0.5f, 0.0f,    .0f, 1.0f, .0f,       0.0f, 0.0f,
-                0.5f, -0.5f, 0.0f,     .0f, .0f, 1.0f,       1.0f, 0.0f,
-                0.5f, 0.5f, 0.0f,      1.0f, 1.0f, .0f,    1.0f, 1.0f
+                -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+                0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+                0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+                0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+                -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+                -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+                -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+                0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+                0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+                0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+                -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+                -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+                -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+                -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+                -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+                -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+                -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+                -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+                0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+                0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+                0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+                0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+                0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+                0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+                -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+                0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+                0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+                0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+                -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+                -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+                -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+                0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+                0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+                0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+                -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+                -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
             };
             unsigned int indices[] = 
             {
@@ -103,13 +139,9 @@ int main()
             shaderProg.setInt("ourTexture2", 1);
 
             // Transformations
-            auto model = glm::rotate(glm::mat4{1.0f}, glm::radians(-55.0f), glm::vec3{1.0f, 0.f, 0.f});
             auto view = glm::translate(glm::mat4{1.0f}, glm::vec3{0, 0, -3.0f});
             auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
-
-            shaderProg.setMatrix("model", glm::value_ptr(model));
             shaderProg.setMatrix("view", glm::value_ptr(view));
-
 
             // VAOs
             unsigned int VAO;
@@ -127,12 +159,10 @@ int main()
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
             // Vertex Attributes
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), nullptr);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-            glEnableVertexAttribArray(2);
 
             // Draw loop
             while(!glfwWindowShouldClose(window))
@@ -141,17 +171,22 @@ int main()
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
 
+                // Rotation
+                auto rot = (glm::sin(glfwGetTime()) + 1) / 2;
+                auto model = glm::rotate(glm::mat4{1.0f}, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(rot, 1.0f, 0.0f));
+                shaderProg.setMatrix("model", glm::value_ptr(model));
+
                 // Projection
                 auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
                 shaderProg.setMatrix("projection", glm::value_ptr(projection));
 
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // Draw
                 // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
-                glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 glfwPollEvents();
                 
