@@ -36,6 +36,11 @@ unsigned int GenTexture(unsigned char* data, int w, int h, int textureUnit = GL_
 int WINDOW_WIDTH = 640;
 int WINDOW_HEIGHT = 480;
 
+bool isKeyPressed(GLFWwindow* window, int key)
+{
+    return glfwGetKey(window, key) == GLFW_PRESS;
+}
+
 int main()
 {
     std::cout << "Hello world!\n";
@@ -153,11 +158,6 @@ int main()
             shaderProg.setInt("ourTexture1", 0);
             shaderProg.setInt("ourTexture2", 1);
 
-            // Transformations
-            auto view = glm::translate(glm::mat4{1.0f}, glm::vec3{0, 0, -3.0f});
-            auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
-            shaderProg.setMatrix("view", glm::value_ptr(view));
-
             // VAOs
             unsigned int VAO;
             glGenVertexArrays(1, &VAO);
@@ -178,7 +178,11 @@ int main()
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
-
+            
+            glm::vec3 cameraPos = glm::vec3{0, 0, -3.0f};
+            float cameraAngle = 0.0f;
+            float angleRate = 1.f;
+            float movRate = 0.25f;
             // Draw loop
             while(!glfwWindowShouldClose(window))
             {   
@@ -189,6 +193,26 @@ int main()
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                // View
+                if(isKeyPressed(window, GLFW_KEY_UP))
+                    cameraPos.y -= movRate;
+                else if(isKeyPressed(window, GLFW_KEY_DOWN))
+                    cameraPos.y += movRate;
+
+                if(isKeyPressed(window, GLFW_KEY_S))
+                    cameraPos.z -= movRate;
+                else if(isKeyPressed(window, GLFW_KEY_W))
+                    cameraPos.z += movRate;
+
+                if(isKeyPressed(window, GLFW_KEY_LEFT))
+                    cameraAngle += angleRate;
+                else if(isKeyPressed(window, GLFW_KEY_RIGHT))
+                    cameraAngle -= angleRate;
+
+                auto view = glm::translate(glm::mat4{1.0f}, cameraPos);
+                view = glm::rotate(view, glm::radians(cameraAngle), glm::vec3{0.0f, 1.0f, 0.0f});
+                shaderProg.setMatrix("view", glm::value_ptr(view));
 
                 // Projection
                 auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
