@@ -111,6 +111,21 @@ int main()
                 1, 2, 3
             };
 
+            glm::vec3 cubePos[] = {
+                glm::vec3( 0.0f,  0.0f,  0.0f), 
+                glm::vec3( 2.0f,  5.0f, -15.0f), 
+                glm::vec3(-1.5f, -2.2f, -2.5f),  
+                glm::vec3(-3.8f, -2.0f, -12.3f),  
+                glm::vec3( 2.4f, -0.4f, -3.5f),  
+                glm::vec3(-1.7f,  3.0f, -7.5f),  
+                glm::vec3( 1.3f, -2.0f, -2.5f),  
+                glm::vec3( 1.5f,  2.0f, -2.5f), 
+                glm::vec3( 1.5f,  0.2f, -1.5f), 
+                glm::vec3(-1.3f,  1.0f, -1.5f)  
+            };
+            int cubePosSize = sizeof(cubePos);
+            std::cout << "cubePos size is " << cubePosSize << '\n';
+
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
@@ -171,22 +186,26 @@ int main()
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
 
-                // Rotation
-                auto rot = (glm::sin(glfwGetTime()) + 1) / 2;
-                auto model = glm::rotate(glm::mat4{1.0f}, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(rot, 1.0f, 0.0f));
-                shaderProg.setMatrix("model", glm::value_ptr(model));
+                // Clear
+                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // Projection
                 auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
                 shaderProg.setMatrix("projection", glm::value_ptr(projection));
 
-                // Clear
-                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                // Rotation
+                for(auto i = 0; i < 10; i++)
+                {
+                    auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
+                    float angle = glm::radians(20.0f * i);
+                    model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
+                    shaderProg.setMatrix("model", glm::value_ptr(model));
 
-                // Draw
-                // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
-                glDrawArrays(GL_TRIANGLES, 0, 36);
+                    // Draw
+                    // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                    glDrawArrays(GL_TRIANGLES, 0, 36);
+                }
 
                 glfwPollEvents();
                 
