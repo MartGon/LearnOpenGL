@@ -197,8 +197,9 @@ int main()
                 // Rotation
                 for(auto i = 0; i < 10; i++)
                 {
+                    bool rotate = i % 3 == 0;
                     auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
-                    float angle = glm::radians(20.0f * i);
+                    float angle = rotate ? (float)glfwGetTime() * glm::radians(50.f) : glm::radians(20.0f * i) ;
                     model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
                     shaderProg.setMatrix("model", glm::value_ptr(model));
 
