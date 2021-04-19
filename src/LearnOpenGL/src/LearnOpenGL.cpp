@@ -153,11 +153,6 @@ int main()
             shaderProg.setInt("ourTexture1", 0);
             shaderProg.setInt("ourTexture2", 1);
 
-            // Transformations
-            auto view = glm::translate(glm::mat4{1.0f}, glm::vec3{0, 0, -3.0f});
-            auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
-            shaderProg.setMatrix("view", glm::value_ptr(view));
-
             // VAOs
             unsigned int VAO;
             glGenVertexArrays(1, &VAO);
@@ -189,6 +184,14 @@ int main()
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                // View
+                glm::vec3 cameraPos{0, 0, 10};
+                glm::vec3 target{0, 0, 0};
+                auto view = glm::lookAt(cameraPos, target, glm::vec3{0, 1, 0});
+                float angle = -glm::radians(glfwGetTime() * 50.0f);
+                view = glm::rotate(view, angle, glm::vec3{0, 1.f, 0});
+                shaderProg.setMatrix("view", glm::value_ptr(view));
 
                 // Projection
                 auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
