@@ -36,6 +36,11 @@ unsigned int GenTexture(unsigned char* data, int w, int h, int textureUnit = GL_
 int WINDOW_WIDTH = 640;
 int WINDOW_HEIGHT = 480;
 
+bool isKeyPressed(GLFWwindow* window, int key)
+{
+    return glfwGetKey(window, key) == GLFW_PRESS;
+}
+
 int main()
 {
     std::cout << "Hello world!\n";
@@ -175,6 +180,11 @@ int main()
             glEnableVertexAttribArray(1);
 
             // Draw loop
+            const float cameraSpeed = 0.25f;
+            glm::vec3 cameraPos{0, 0, 3};
+            glm::vec3 cameraFront{0, 0, -1.0f};
+            glm::vec3 up{0, 1, 0};
+            glm::vec3 translation{0};
             while(!glfwWindowShouldClose(window))
             {   
                 // Window Input
@@ -186,12 +196,21 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // View
-                glm::vec3 cameraPos{0, 0, 0};
-                float radius = 10.0f;
-                cameraPos.x = std::sin(glfwGetTime());
-                cameraPos.z = std::cos(glfwGetTime());
-                glm::vec3 target{0, 0, 0};
-                auto view = glm::lookAt(cameraPos * radius, target, glm::vec3{0, 1, 0});
+                glm::vec3 target = cameraPos + cameraFront;
+                auto view = glm::lookAt(cameraPos, target, glm::vec3{0, 1, 0});
+
+                if(isKeyPressed(window, GLFW_KEY_W))
+                    translation.z += cameraSpeed;
+                else if(isKeyPressed(window, GLFW_KEY_S))
+                    translation.z -= cameraSpeed;
+
+                if(isKeyPressed(window, GLFW_KEY_A))
+                    translation.x += cameraSpeed;
+                else if(isKeyPressed(window, GLFW_KEY_D))
+                    translation.x -= cameraSpeed;
+                    
+                view = glm::translate(view, translation);
+                view = glm::rotate(view, (float)glfwGetTime(), glm::vec3{0, 1, 0});
                 shaderProg.setMatrix("view", glm::value_ptr(view));
 
                 // Projection
