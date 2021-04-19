@@ -184,7 +184,6 @@ int main()
             glm::vec3 cameraPos{0, 0, 3};
             glm::vec3 cameraFront{0, 0, -1.0f};
             glm::vec3 up{0, 1, 0};
-            glm::vec3 translation{0};
             while(!glfwWindowShouldClose(window))
             {   
                 // Window Input
@@ -196,21 +195,20 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // View
-                glm::vec3 target = cameraPos + cameraFront;
-                auto view = glm::lookAt(cameraPos, target, glm::vec3{0, 1, 0});
-
                 if(isKeyPressed(window, GLFW_KEY_W))
-                    translation.z += cameraSpeed;
+                    cameraPos += cameraFront * cameraSpeed;
                 else if(isKeyPressed(window, GLFW_KEY_S))
-                    translation.z -= cameraSpeed;
+                    cameraPos -= cameraFront * cameraSpeed;
 
                 if(isKeyPressed(window, GLFW_KEY_A))
-                    translation.x += cameraSpeed;
+                    cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraFront, up));
                 else if(isKeyPressed(window, GLFW_KEY_D))
-                    translation.x -= cameraSpeed;
+                    cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraFront, up));
+
+                glm::vec3 target = cameraPos + cameraFront;
+                auto view = glm::lookAt(cameraPos, target, glm::vec3{0, 1, 0});
                     
-                view = glm::translate(view, translation);
-                view = glm::rotate(view, (float)glfwGetTime(), glm::vec3{0, 1, 0});
+                //view = glm::rotate(view, (float)glfwGetTime(), glm::vec3{0, 1, 0});
                 shaderProg.setMatrix("view", glm::value_ptr(view));
 
                 // Projection
