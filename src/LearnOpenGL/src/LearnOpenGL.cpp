@@ -186,11 +186,12 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // View
-                glm::vec3 cameraPos{0, 0, 10};
+                glm::vec3 cameraPos{0, 0, 0};
+                float radius = 10.0f;
+                cameraPos.x = std::sin(glfwGetTime());
+                cameraPos.z = std::cos(glfwGetTime());
                 glm::vec3 target{0, 0, 0};
-                auto view = glm::lookAt(cameraPos, target, glm::vec3{0, 1, 0});
-                float angle = -glm::radians(glfwGetTime() * 50.0f);
-                view = glm::rotate(view, angle, glm::vec3{0, 1.f, 0});
+                auto view = glm::lookAt(cameraPos * radius, target, glm::vec3{0, 1, 0});
                 shaderProg.setMatrix("view", glm::value_ptr(view));
 
                 // Projection
