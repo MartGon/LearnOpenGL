@@ -41,6 +41,54 @@ bool isKeyPressed(GLFWwindow* window, int key)
     return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
+float Clamp(float value, float limit)
+{
+    return value > limit ? limit : value;
+}
+
+float Limit(float value, float downLimit, float upLimit)
+{
+    if(value > upLimit)
+        return upLimit;
+    else if(value < downLimit)
+        return downLimit;
+
+    return value;
+}
+
+// Camera
+float lastX = WINDOW_WIDTH / 2;
+float lastY = WINDOW_HEIGHT / 2;
+float pitch = 0;
+float yaw = glm::radians(270.0f);
+bool firstMouse = true;
+float fov = 45.0f;
+const float rotationRate = 5.0f;
+const float sensitivity = 0.0025f;
+
+void MouseCallback(GLFWwindow* window, double xpos, double ypos)
+{   
+    auto xOffset = xpos - lastX;
+    auto yOffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    if(!firstMouse)
+    {
+        yaw += (xOffset * sensitivity);
+        pitch += (yOffset * sensitivity);
+        pitch = Limit(pitch, glm::radians(-90.0f), glm::radians(90.0f));
+    }
+    else
+        firstMouse = false;
+}
+
+void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    fov -= (float)yoffset;
+    fov = Limit(fov, 1.0f, 90.0f);
+}
+
 int main()
 {
     std::cout << "Hello world!\n";
@@ -60,7 +108,11 @@ int main()
             WINDOW_WIDTH = width;
             WINDOW_HEIGHT = height;
             glViewport(0, 0, width, height);
-        });  
+        }); 
+
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); 
+        glfwSetCursorPosCallback(window, MouseCallback);
+        glfwSetScrollCallback(window, ScrollCallback);
 
         if(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
@@ -179,13 +231,16 @@ int main()
             glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
 
-            // Draw loop
-            const float cameraSpeed = 0.25f;
+            // Camera system
             glm::vec3 cameraPos{0, 0, 3};
             glm::vec3 cameraFront{0, 0, -1.0f};
             glm::vec3 up{0, 1, 0};
+
+            // Game loop
+            float delta = 0;
             while(!glfwWindowShouldClose(window))
             {   
+                float now = glfwGetTime();
                 // Window Input
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
@@ -195,24 +250,32 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // View
+                glm::vec3 direction;
+                direction.x = cos(yaw) * cos(pitch);
+                direction.y = sin(pitch);
+                direction.z = sin(yaw) * cos(pitch);
+
+                //std::cout << "Direction is now " << direction.x << ", " << direction.y << ", " << direction.z << "\n";
+                cameraFront = glm::normalize(direction);
+
+                float cameraSpeed = 2.5f * delta;
                 if(isKeyPressed(window, GLFW_KEY_W))
                     cameraPos += cameraFront * cameraSpeed;
                 else if(isKeyPressed(window, GLFW_KEY_S))
                     cameraPos -= cameraFront * cameraSpeed;
 
                 if(isKeyPressed(window, GLFW_KEY_A))
-                    cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraFront, up));
-                else if(isKeyPressed(window, GLFW_KEY_D))
                     cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraFront, up));
+                else if(isKeyPressed(window, GLFW_KEY_D))
+                    cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraFront, up));
 
                 glm::vec3 target = cameraPos + cameraFront;
                 auto view = glm::lookAt(cameraPos, target, glm::vec3{0, 1, 0});
                     
-                //view = glm::rotate(view, (float)glfwGetTime(), glm::vec3{0, 1, 0});
                 shaderProg.setMatrix("view", glm::value_ptr(view));
 
                 // Projection
-                auto projection = glm::perspective(glm::radians(45.0f),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
+                auto projection = glm::perspective(glm::radians(fov),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
                 shaderProg.setMatrix("projection", glm::value_ptr(projection));
 
                 // Rotation
@@ -231,7 +294,9 @@ int main()
                 glfwPollEvents();
                 
                 // Swap buffers
-                glfwSwapBuffers(window);  
+                glfwSwapBuffers(window);
+
+                delta = glfwGetTime() - now;
             }
         }
     }
