@@ -134,11 +134,6 @@ int main()
                 -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
                 -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
             };
-            unsigned int indices[] = 
-            {
-                0, 1, 3,
-                1, 2, 3
-            };
 
             glm::vec3 cubePos[] = {
                 glm::vec3( 0.0f,  0.0f,  0.0f), 
@@ -152,8 +147,6 @@ int main()
                 glm::vec3( 1.5f,  0.2f, -1.5f), 
                 glm::vec3(-1.3f,  1.0f, -1.5f)  
             };
-            int cubePosSize = sizeof(cubePos);
-            std::cout << "cubePos size is " << cubePosSize << '\n';
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
@@ -182,31 +175,41 @@ int main()
             shaderProg.setInt("ourTexture1", 0);
             shaderProg.setInt("ourTexture2", 1);
 
-            // VAOs
-            unsigned int VAO;
-            glGenVertexArrays(1, &VAO);
-            glBindVertexArray(VAO);
-            
+            enum ObjIndex
+            {
+                CUBE,
+                LIGHT
+            };
+
+            // Arrays and Buffers
+            unsigned int VAO[2];
+            glGenVertexArrays(1, VAO);
             unsigned int VBO;
             glGenBuffers(1, &VBO);
+
+            // Cube
+            glBindVertexArray(VAO[CUBE]);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-            unsigned int EBO;
-            glGenBuffers(1, &EBO);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-            // Vertex Attributes
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-            glEnableVertexAttribArray(1);
 
-            // Camera system
-            glm::vec3 cameraPos{0, 0, 3};
-            glm::vec3 cameraFront{0, 0, -1.0f};
-            glm::vec3 up{0, 1, 0};
+            // Light source
+            glBindVertexArray(VAO[LIGHT]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+            glEnableVertexAttribArray(0);
+            
+            // Set colors
+            glm::vec3 objectColor{1.0f, 0.5f, 0.31f};
+            glm::vec3 lightColor{1.0f, 1.0f, 1.0f};
+            shaderProg.setVec3("objectColor", glm::value_ptr(objectColor));
+            shaderProg.setVec3("lightColor", glm::value_ptr(lightColor));
+
+            // Set camera pos
+            camera.Position = glm::vec3{0, 0, 3.f};
 
             // Game loop
             float delta = 0;
@@ -249,6 +252,7 @@ int main()
 
                     // Draw
                     // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                    glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
 
