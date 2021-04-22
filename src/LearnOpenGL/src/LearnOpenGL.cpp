@@ -136,7 +136,6 @@ int main()
             };
 
             glm::vec3 cubePos[] = {
-                glm::vec3( 0.0f,  0.0f,  0.0f), 
                 glm::vec3( 2.0f,  5.0f, -15.0f), 
                 glm::vec3(-1.5f, -2.2f, -2.5f),  
                 glm::vec3(-3.8f, -2.0f, -12.3f),  
@@ -147,33 +146,17 @@ int main()
                 glm::vec3( 1.5f,  0.2f, -1.5f), 
                 glm::vec3(-1.3f,  1.0f, -1.5f)  
             };
-
+            glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
+            
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
-            std::filesystem::path fragPath = shaderFolder / "fragment.glsl";
-            LearnOpenGL::Shader shaderProg{vertexPath.c_str(), fragPath.c_str()};
-            shaderProg.use();
+            std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
+            std::filesystem::path lightFragPath = shaderFolder / "lightFrag.glsl";
+            LearnOpenGL::Shader cubeShader{vertexPath.c_str(), cubeFragPath.c_str()};
+            LearnOpenGL::Shader lightShader{vertexPath.c_str(), lightFragPath.c_str()};
+            cubeShader.use();
 
-            // Texture loading
-            std::filesystem::path textureFolder{TEXTURES_DIR};
-            std::filesystem::path texturePath = textureFolder / "container.jpg";
-            std::filesystem::path facePath = textureFolder / "awesomeface.png";
-            stbi_set_flip_vertically_on_load(true);  
-
-            int w, h;
-            int channels;
-            unsigned char* textureData = stbi_load(texturePath.c_str(), &w, &h, &channels, 0);
-
-            // OpenGL Texture
-            auto texture = GenTexture(textureData, w, h, GL_TEXTURE0);
-            stbi_image_free(textureData);
-
-            textureData = stbi_load(facePath.c_str(), &w, &h, &channels, 0);
-            auto texture2 = GenTexture(textureData, w, h, GL_TEXTURE1, GL_RGBA);
-
-            shaderProg.setInt("ourTexture1", 0);
-            shaderProg.setInt("ourTexture2", 1);
 
             enum ObjIndex
             {
@@ -183,7 +166,7 @@ int main()
 
             // Arrays and Buffers
             unsigned int VAO[2];
-            glGenVertexArrays(1, VAO);
+            glGenVertexArrays(2, VAO);
             unsigned int VBO;
             glGenBuffers(1, &VBO);
 
@@ -205,8 +188,8 @@ int main()
             // Set colors
             glm::vec3 objectColor{1.0f, 0.5f, 0.31f};
             glm::vec3 lightColor{1.0f, 1.0f, 1.0f};
-            shaderProg.setVec3("objectColor", glm::value_ptr(objectColor));
-            shaderProg.setVec3("lightColor", glm::value_ptr(lightColor));
+            cubeShader.setVec3("objectColor", glm::value_ptr(objectColor));
+            cubeShader.setVec3("lightColor", glm::value_ptr(lightColor));
 
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
@@ -235,26 +218,32 @@ int main()
                 else if(isKeyPressed(window, GLFW_KEY_D))
                     camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
 
+                // Transformations
                 auto view = camera.GetViewMatrix();                    
-                shaderProg.setMatrix("view", glm::value_ptr(view));
-
-                // Projection
                 auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
-                shaderProg.setMatrix("projection", glm::value_ptr(projection));
+                auto model = glm::translate(glm::mat4{1.0f}, lightPos);
+                model = glm::scale(model, glm::vec3(0.2f)); 
 
-                // Rotation
-                for(auto i = 0; i < 10; i++)
-                {
-                    auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
-                    float angle = glm::radians(20.0f * i);
-                    model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
-                    shaderProg.setMatrix("model", glm::value_ptr(model));
+                // Light
+                lightShader.use();
+                lightShader.setMatrix("view", glm::value_ptr(view));
+                lightShader.setMatrix("projection", glm::value_ptr(projection));
+                lightShader.setMatrix("model", glm::value_ptr(model));
 
-                    // Draw
-                    // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
-                    glBindVertexArray(VAO[CUBE]);
-                    glDrawArrays(GL_TRIANGLES, 0, 36);
-                }
+                glBindVertexArray(VAO[CUBE]);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+
+                // Cubes
+                cubeShader.use();
+                cubeShader.setMatrix("projection", glm::value_ptr(projection));
+                cubeShader.setMatrix("view", glm::value_ptr(view));
+                model = glm::mat4{1.0f};
+                cubeShader.setMatrix("model", glm::value_ptr(model));
+
+                // Draw
+                // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                glBindVertexArray(VAO[CUBE]);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 glfwPollEvents();
                 
