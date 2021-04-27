@@ -211,9 +211,6 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // Update light pos
-                lightPos.x = cos(now);
-                lightPos.y = cos(now / 2);
-                lightPos.z = sin(now);
                 cubeShader.setVec3("lightPos", glm::value_ptr(lightPos));
 
                 float cameraSpeed = 2.5f * delta;
