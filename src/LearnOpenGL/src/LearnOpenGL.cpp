@@ -68,7 +68,7 @@ int main()
     // GLFG setup
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     auto window = glfwCreateWindow(640, 480, "Window", NULL, NULL);
@@ -153,8 +153,8 @@ int main()
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
             std::filesystem::path lightFragPath = shaderFolder / "lightFrag.glsl";
-            LearnOpenGL::Shader cubeShader{vertexPath.c_str(), cubeFragPath.c_str()};
-            LearnOpenGL::Shader lightShader{vertexPath.c_str(), lightFragPath.c_str()};
+            LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
+            LearnOpenGL::Shader lightShader{vertexPath.generic_string().c_str(), lightFragPath.generic_string().c_str() };
             cubeShader.use();
 
 
@@ -259,6 +259,13 @@ int main()
                 delta = glfwGetTime() - now;
             }
         }
+    }
+    else
+    {
+        const char* error = new char[1024];
+        glfwGetError(&error);
+
+        std::cout << "Create window Error: " << error << '\n';
     }
 
     // Close
