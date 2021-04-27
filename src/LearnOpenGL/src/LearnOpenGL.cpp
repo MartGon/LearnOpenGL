@@ -188,15 +188,15 @@ int main()
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
             
+            // Set camera pos
+            camera.Position = glm::vec3{0, 0, 3.f};
+
             // Set colors
             glm::vec3 objectColor{1.0f, 0.5f, 0.31f};
             glm::vec3 lightColor{1.0f, 1.0f, 1.0f};
             cubeShader.setVec3("objectColor", glm::value_ptr(objectColor));
             cubeShader.setVec3("lightColor", glm::value_ptr(lightColor));
             cubeShader.setVec3("lightPos", glm::value_ptr(lightPos));
-
-            // Set camera pos
-            camera.Position = glm::vec3{0, 0, 3.f};
 
             // Game loop
             float delta = 0;
@@ -221,6 +221,8 @@ int main()
                     camera.ProcessKeyboard(Camera_Movement::LEFT, delta);
                 else if(isKeyPressed(window, GLFW_KEY_D))
                     camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
+
+                cubeShader.setVec3("viewPos", glm::value_ptr(camera.Position));
 
                 // Transformations
                 auto view = camera.GetViewMatrix();                    
