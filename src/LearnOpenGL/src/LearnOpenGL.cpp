@@ -196,7 +196,6 @@ int main()
             glm::vec3 lightColor{1.0f, 1.0f, 1.0f};
             cubeShader.setVec3("objectColor", glm::value_ptr(objectColor));
             cubeShader.setVec3("lightColor", glm::value_ptr(lightColor));
-            cubeShader.setVec3("lightPos", glm::value_ptr(lightPos));
 
             // Game loop
             float delta = 0;
@@ -210,6 +209,12 @@ int main()
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                // Update light pos
+                lightPos.x = cos(now);
+                lightPos.y = cos(now / 2);
+                lightPos.z = sin(now);
+                cubeShader.setVec3("lightPos", glm::value_ptr(lightPos));
 
                 float cameraSpeed = 2.5f * delta;
                 if(isKeyPressed(window, GLFW_KEY_W))
