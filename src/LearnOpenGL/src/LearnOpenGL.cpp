@@ -210,12 +210,6 @@ int main()
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                // Update light pos
-                lightPos.x = cos(now);
-                lightPos.y = cos(now / 2);
-                lightPos.z = sin(now);
-                cubeShader.setVec3("lightPos", glm::value_ptr(lightPos));
-
                 float cameraSpeed = 2.5f * delta;
                 if(isKeyPressed(window, GLFW_KEY_W))
                     camera.ProcessKeyboard(Camera_Movement::FORWARD, delta);
@@ -233,7 +227,13 @@ int main()
                 auto view = camera.GetViewMatrix();                    
                 auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
                 auto model = glm::translate(glm::mat4{1.0f}, lightPos);
-                model = glm::scale(model, glm::vec3(0.2f)); 
+                model = glm::scale(model, glm::vec3(0.2f));
+
+                // Update light pos
+                lightPos.x = cos(now);
+                lightPos.y = cos(now / 2);
+                lightPos.z = sin(now);
+                cubeShader.setVec3("lightPos", glm::value_ptr(lightPos));
 
                 // Light
                 lightShader.use();

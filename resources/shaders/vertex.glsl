@@ -11,10 +11,11 @@ out vec3 fragPos;
 
 void main()
 {
-    mat4 transform = projection * view * model;
-
+    mat4 viewTransform = view * model;
+    mat4 transform = projection * viewTransform;
     gl_Position = transform * vec4(aPos, 1.0f);
-    mat3 normalMatrix = mat3(transpose(inverse(model)));
+
+    mat3 normalMatrix = mat3(transpose(inverse(viewTransform)));
     normal = normalMatrix * aNormal;
-    fragPos = aPos;
+    fragPos = vec3(viewTransform * vec4(aPos, 1.0));
 }
