@@ -182,24 +182,21 @@ int main()
             camera.Position = glm::vec3{0, 0, 3.f};
 
             // Set colors
-            glm::vec3 objectColor{1.0f, 0.5f, 0.31f};
-            glm::vec3 specular{ 0.5f, 0.5f, 0.5f };
+            glm::vec3 ambient{0.0f, 0.1f, 0.6f};
+            glm::vec3 diffuse{0.0f, 0.50980392f, 0.50980392};
+            glm::vec3 specular{ 0.50196078f, 0.50196078f, 0.50196078f };
             
-            cubeShader.setVec3("lightPos", glm::value_ptr(lightPos));
-            cubeShader.setVec3("material.ambient", glm::value_ptr(objectColor));
-            cubeShader.setVec3("material.diffuse", glm::value_ptr(objectColor));
+            cubeShader.setVec3("material.ambient", glm::value_ptr(ambient));
+            cubeShader.setVec3("material.diffuse", glm::value_ptr(diffuse));
             cubeShader.setVec3("material.specular", glm::value_ptr(specular));
             cubeShader.setFloat("material.shininess", 32.0f);
 
-            glm::vec3 lightColor{ 1.0f, 1.0f, 1.0f };
-            glm::vec3 lightAmbient{ 0.2f, 0.2f, 0.2f };
-            glm::vec3 lightDiffuse{ 0.5f, 0.5f, 0.5f };
-            glm::vec3 lightSpecular{ 1.0f };
+            glm::vec3 lightColor{ 1.0f };
             cubeShader.setVec3("lightColor", glm::value_ptr(lightColor));
             cubeShader.setVec3("light.pos", glm::value_ptr(lightPos));
-            cubeShader.setVec3("light.ambient", glm::value_ptr(lightAmbient));
-            cubeShader.setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
-            cubeShader.setVec3("light.specular", glm::value_ptr(lightSpecular));
+            cubeShader.setVec3("light.ambient", glm::value_ptr(lightColor));
+            cubeShader.setVec3("light.diffuse", glm::value_ptr(lightColor));
+            cubeShader.setVec3("light.specular", glm::value_ptr(lightColor));
 
             // Game loop
             float delta = 0;
