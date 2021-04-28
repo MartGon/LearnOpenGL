@@ -94,51 +94,50 @@ int main()
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
             float vertices[] = {
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-                -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
+                // positions          // normals           // texture coords
+                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+                0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+                -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+                0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+                0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+                0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+                -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+                -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+                -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+                0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+                0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+                0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+                -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
-            };
+                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+                0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+                -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+            };         
 
-            glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
-            
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
@@ -165,11 +164,14 @@ int main()
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0 * sizeof(float)));
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
 
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
+
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+            glEnableVertexAttribArray(2);
 
             // Light source
             glBindVertexArray(VAO[LIGHT]);
@@ -177,6 +179,25 @@ int main()
             
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
+
+            // Textures
+
+            std::filesystem::path texturesDir{TEXTURES_DIR};
+            std::filesystem::path texturePath = texturesDir / "container2.png";
+            int width, height, nrChannels;
+            auto data = stbi_load(texturePath.string().c_str(), &width, &height, &nrChannels, 0);
+            int texture = 0;
+            if(data)
+            {
+                texture = GenTexture(data, width, height, GL_TEXTURE0, GL_RGBA);
+            }
+            else
+            {
+                std::cout << "Error:" << stbi_failure_reason() <<" while loading texture at " << texturePath.string().c_str() << '\n';
+                return -1;
+            }
+            stbi_image_free(data);
+
             
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
@@ -185,9 +206,7 @@ int main()
             glm::vec3 objectColor{1.0f, 0.5f, 0.31f};
             glm::vec3 specular{ 0.5f, 0.5f, 0.5f };
             
-            cubeShader.setVec3("lightPos", glm::value_ptr(lightPos));
-            cubeShader.setVec3("material.ambient", glm::value_ptr(objectColor));
-            cubeShader.setVec3("material.diffuse", glm::value_ptr(objectColor));
+            
             cubeShader.setVec3("material.specular", glm::value_ptr(specular));
             cubeShader.setFloat("material.shininess", 32.0f);
 
@@ -220,13 +239,10 @@ int main()
 
                 // Light colors
                 glm::vec3 lightColor{ 1.0f, 1.0f, 1.0f };
-                lightColor.x = sin(glfwGetTime() * 2.0f);
-                lightColor.y = sin(glfwGetTime() * 0.7f);
-                lightColor.z = sin(glfwGetTime() * 1.3f);
-
                 glm::vec3 lightAmbient = lightColor * glm::vec3{ 0.2f };
                 glm::vec3 lightDiffuse = lightColor * glm::vec3{ 0.5f };
                 glm::vec3 lightSpecular{ 1.0f };
+                glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
                 cubeShader.setVec3("light.pos", glm::value_ptr(lightPos));
                 cubeShader.setVec3("light.ambient", glm::value_ptr(lightAmbient));
                 cubeShader.setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
@@ -256,6 +272,7 @@ int main()
 
                 // Draw
                 // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                glBindTexture(GL_TEXTURE_2D, texture);
                 glBindVertexArray(VAO[CUBE]);
                 glDrawArrays(GL_TRIANGLES, 0, 36);
 
