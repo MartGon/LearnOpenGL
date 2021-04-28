@@ -16,20 +16,31 @@
 #include <Shader.h>
 #include <Camera.h>
 
-unsigned int GenTexture(unsigned char* data, int w, int h, int textureUnit = GL_TEXTURE0, int format = GL_RGB)
+unsigned int GenTexture(std::filesystem::path path, int textureUnit = GL_TEXTURE0, int format = GL_RGB)
 {
     unsigned int texture;
     glGenTextures(1, &texture);
     glActiveTexture(textureUnit);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    int width, height, nrChannels;
+    auto data = stbi_load(path.string().c_str(), &width, &height, &nrChannels, 0);
+    if(data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, format, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+    else
+    {
+        std::cout << "Error:" << stbi_failure_reason() <<" while loading texture at " << path.string().c_str() << '\n';
+        return -1;
+    }
+    stbi_image_free(data);
 
     return texture;
 }
@@ -177,38 +188,25 @@ int main()
             glBindVertexArray(VAO[LIGHT]);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
             
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
 
             // Textures
-
             std::filesystem::path texturesDir{TEXTURES_DIR};
             std::filesystem::path texturePath = texturesDir / "container2.png";
-            int width, height, nrChannels;
-            auto data = stbi_load(texturePath.string().c_str(), &width, &height, &nrChannels, 0);
-            int texture = 0;
-            if(data)
-            {
-                texture = GenTexture(data, width, height, GL_TEXTURE0, GL_RGBA);
-            }
-            else
-            {
-                std::cout << "Error:" << stbi_failure_reason() <<" while loading texture at " << texturePath.string().c_str() << '\n';
-                return -1;
-            }
-            stbi_image_free(data);
+            auto texture = GenTexture(texturePath, GL_TEXTURE0, GL_RGBA);
 
-            
+            std::filesystem::path specularPath = texturesDir / "container2_specular.png";
+            auto specularMap = GenTexture(specularPath, GL_TEXTURE1, GL_RGBA);
+
+            // Set material properties
+            cubeShader.use();
+            cubeShader.setInt("material.diffuse", 0);
+            cubeShader.setInt("material.specular", 1);
+            cubeShader.setFloat("material.shininess", 32.0f);
+
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
-
-            // Set colors
-            glm::vec3 objectColor{1.0f, 0.5f, 0.31f};
-            glm::vec3 specular{ 0.5f, 0.5f, 0.5f };
-            
-            
-            cubeShader.setVec3("material.specular", glm::value_ptr(specular));
-            cubeShader.setFloat("material.shininess", 32.0f);
 
             // Game loop
             float delta = 0;
@@ -260,7 +258,7 @@ int main()
                 lightShader.setMatrix("projection", glm::value_ptr(projection));
                 lightShader.setMatrix("model", glm::value_ptr(model));
 
-                glBindVertexArray(VAO[CUBE]);
+                glBindVertexArray(VAO[LIGHT]);
                 glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 // Cubes
@@ -272,7 +270,7 @@ int main()
 
                 // Draw
                 // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
-                glBindTexture(GL_TEXTURE_2D, texture);
+
                 glBindVertexArray(VAO[CUBE]);
                 glDrawArrays(GL_TRIANGLES, 0, 36);
 
