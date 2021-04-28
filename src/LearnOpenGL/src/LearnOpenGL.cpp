@@ -191,16 +191,6 @@ int main()
             cubeShader.setVec3("material.specular", glm::value_ptr(specular));
             cubeShader.setFloat("material.shininess", 32.0f);
 
-            glm::vec3 lightColor{ 1.0f, 1.0f, 1.0f };
-            glm::vec3 lightAmbient{ 0.2f, 0.2f, 0.2f };
-            glm::vec3 lightDiffuse{ 0.5f, 0.5f, 0.5f };
-            glm::vec3 lightSpecular{ 1.0f };
-            cubeShader.setVec3("lightColor", glm::value_ptr(lightColor));
-            cubeShader.setVec3("light.pos", glm::value_ptr(lightPos));
-            cubeShader.setVec3("light.ambient", glm::value_ptr(lightAmbient));
-            cubeShader.setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
-            cubeShader.setVec3("light.specular", glm::value_ptr(lightSpecular));
-
             // Game loop
             float delta = 0;
             while(!glfwWindowShouldClose(window))
@@ -225,7 +215,22 @@ int main()
                 else if(isKeyPressed(window, GLFW_KEY_D))
                     camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
 
+                // Camera pos
                 cubeShader.setVec3("viewPos", glm::value_ptr(camera.Position));
+
+                // Light colors
+                glm::vec3 lightColor{ 1.0f, 1.0f, 1.0f };
+                lightColor.x = sin(glfwGetTime() * 2.0f);
+                lightColor.y = sin(glfwGetTime() * 0.7f);
+                lightColor.z = sin(glfwGetTime() * 1.3f);
+
+                glm::vec3 lightAmbient = lightColor * glm::vec3{ 0.2f };
+                glm::vec3 lightDiffuse = lightColor * glm::vec3{ 0.5f };
+                glm::vec3 lightSpecular{ 1.0f };
+                cubeShader.setVec3("light.pos", glm::value_ptr(lightPos));
+                cubeShader.setVec3("light.ambient", glm::value_ptr(lightAmbient));
+                cubeShader.setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
+                cubeShader.setVec3("light.specular", glm::value_ptr(lightSpecular));
 
                 // Transformations
                 auto view = camera.GetViewMatrix();                    
