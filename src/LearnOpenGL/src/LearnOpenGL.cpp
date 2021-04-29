@@ -148,6 +148,18 @@ int main()
                 -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
                 -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
             };         
+            glm::vec3 cubePos[] = {
+                glm::vec3( 0.0f,  0.0f,  0.0f), 
+                glm::vec3( 2.0f,  5.0f, -15.0f), 
+                glm::vec3(-1.5f, -2.2f, -2.5f),  
+                glm::vec3(-3.8f, -2.0f, -12.3f),  
+                glm::vec3( 2.4f, -0.4f, -3.5f),  
+                glm::vec3(-1.7f,  3.0f, -7.5f),  
+                glm::vec3( 1.3f, -2.0f, -2.5f),  
+                glm::vec3( 1.5f,  2.0f, -2.5f), 
+                glm::vec3( 1.5f,  0.2f, -1.5f), 
+                glm::vec3(-1.3f,  1.0f, -1.5f)  
+            };
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
@@ -240,8 +252,8 @@ int main()
                 glm::vec3 lightAmbient = lightColor * glm::vec3{ 0.2f };
                 glm::vec3 lightDiffuse = lightColor * glm::vec3{ 0.5f };
                 glm::vec3 lightSpecular{ 1.0f };
-                glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
-                cubeShader.setVec3("light.pos", glm::value_ptr(lightPos));
+                glm::vec3 lightDir{-0.2f, -1.0f, -0.3f};
+                cubeShader.setVec3("light.direction", glm::value_ptr(lightDir));
                 cubeShader.setVec3("light.ambient", glm::value_ptr(lightAmbient));
                 cubeShader.setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
                 cubeShader.setVec3("light.specular", glm::value_ptr(lightSpecular));
@@ -249,30 +261,37 @@ int main()
                 // Transformations
                 auto view = camera.GetViewMatrix();                    
                 auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
-                auto model = glm::translate(glm::mat4{1.0f}, lightPos);
-                model = glm::scale(model, glm::vec3(0.2f)); 
+                //auto model = glm::translate(glm::mat4{1.0f}, lightPos);
+                //model = glm::scale(model, glm::vec3(0.2f)); 
 
                 // Light
                 lightShader.use();
                 lightShader.setMatrix("view", glm::value_ptr(view));
                 lightShader.setMatrix("projection", glm::value_ptr(projection));
-                lightShader.setMatrix("model", glm::value_ptr(model));
+                //lightShader.setMatrix("model", glm::value_ptr(model));
 
-                glBindVertexArray(VAO[LIGHT]);
-                glDrawArrays(GL_TRIANGLES, 0, 36);
+                //glBindVertexArray(VAO[LIGHT]);
+                //glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 // Cubes
                 cubeShader.use();
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
                 cubeShader.setMatrix("view", glm::value_ptr(view));
-                model = glm::mat4{1.0f};
-                cubeShader.setMatrix("model", glm::value_ptr(model));
+                for(unsigned int i = 0; i < 10; i++)
+                {
+                    glm::mat4 model = glm::mat4(1.0f);
+                    model = glm::translate(model, cubePos[i]);
+                    float angle = 20.0f * i;
+                    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+                    cubeShader.setMatrix("model", glm::value_ptr(model));
 
-                // Draw
-                // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                    // Draw
+                    // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                    glBindVertexArray(VAO[CUBE]);
+                    glDrawArrays(GL_TRIANGLES, 0, 36);
+                }
 
-                glBindVertexArray(VAO[CUBE]);
-                glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
                 glfwPollEvents();
                 
