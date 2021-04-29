@@ -254,7 +254,9 @@ int main()
                 glm::vec3 lightSpecular{ 1.0f };
                 glm::vec3 lightDir{-0.2f, -1.0f, -0.3f};
                 glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
-                cubeShader.setVec3("light.pos", glm::value_ptr(lightPos));
+                cubeShader.setVec3("light.pos", glm::value_ptr(camera.Position));
+                cubeShader.setVec3("light.dir", glm::value_ptr(camera.Front));
+                cubeShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5)));
                 cubeShader.setVec3("light.ambient", glm::value_ptr(lightAmbient));
                 cubeShader.setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
                 cubeShader.setVec3("light.specular", glm::value_ptr(lightSpecular));
