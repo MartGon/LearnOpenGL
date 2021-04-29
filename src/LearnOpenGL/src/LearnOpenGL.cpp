@@ -196,7 +196,7 @@ int main()
             std::filesystem::path texturePath = texturesDir / "container2.png";
             auto texture = GenTexture(texturePath, GL_TEXTURE0, GL_RGBA);
 
-            std::filesystem::path specularPath = texturesDir / "container2_specular.png";
+            std::filesystem::path specularPath = texturesDir / "lighting_maps_specular_color.png";
             auto specularMap = GenTexture(specularPath, GL_TEXTURE1, GL_RGBA);
 
             // Set material properties
