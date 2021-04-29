@@ -253,25 +253,29 @@ int main()
                 glm::vec3 lightDiffuse = lightColor * glm::vec3{ 0.5f };
                 glm::vec3 lightSpecular{ 1.0f };
                 glm::vec3 lightDir{-0.2f, -1.0f, -0.3f};
-                cubeShader.setVec3("light.direction", glm::value_ptr(lightDir));
+                glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
+                cubeShader.setVec3("light.pos", glm::value_ptr(lightPos));
                 cubeShader.setVec3("light.ambient", glm::value_ptr(lightAmbient));
                 cubeShader.setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
                 cubeShader.setVec3("light.specular", glm::value_ptr(lightSpecular));
+                cubeShader.setFloat("light.constant",  1.0f);
+                cubeShader.setFloat("light.linear",    0.09f);
+                cubeShader.setFloat("light.quadratic", 0.032f);	
 
                 // Transformations
                 auto view = camera.GetViewMatrix();                    
                 auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
-                //auto model = glm::translate(glm::mat4{1.0f}, lightPos);
-                //model = glm::scale(model, glm::vec3(0.2f)); 
+                auto model = glm::translate(glm::mat4{1.0f}, lightPos);
+                model = glm::scale(model, glm::vec3(0.2f)); 
 
                 // Light
                 lightShader.use();
                 lightShader.setMatrix("view", glm::value_ptr(view));
                 lightShader.setMatrix("projection", glm::value_ptr(projection));
-                //lightShader.setMatrix("model", glm::value_ptr(model));
+                lightShader.setMatrix("model", glm::value_ptr(model));
 
-                //glBindVertexArray(VAO[LIGHT]);
-                //glDrawArrays(GL_TRIANGLES, 0, 36);
+                glBindVertexArray(VAO[LIGHT]);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 // Cubes
                 cubeShader.use();
