@@ -199,10 +199,14 @@ int main()
             std::filesystem::path specularPath = texturesDir / "container2_specular.png";
             auto specularMap = GenTexture(specularPath, GL_TEXTURE1, GL_RGBA);
 
+            std::filesystem::path emissionPath = texturesDir / "matrix.jpg";
+            auto emissionMap = GenTexture(emissionPath, GL_TEXTURE2, GL_RGB);
+
             // Set material properties
             cubeShader.use();
             cubeShader.setInt("material.diffuse", 0);
             cubeShader.setInt("material.specular", 1);
+            cubeShader.setInt("material.emission", 2);
             cubeShader.setFloat("material.shininess", 32.0f);
 
             // Set camera pos
@@ -267,6 +271,10 @@ int main()
                 cubeShader.setMatrix("view", glm::value_ptr(view));
                 model = glm::mat4{1.0f};
                 cubeShader.setMatrix("model", glm::value_ptr(model));
+                float intensity = (cos(glfwGetTime() * 4) + 1.f) / 2.f;
+                float time = glfwGetTime();
+                cubeShader.setFloat("intensity", intensity);
+                cubeShader.setFloat("time", time);
 
                 // Draw
                 // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
