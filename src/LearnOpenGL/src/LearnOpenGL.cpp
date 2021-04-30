@@ -53,6 +53,11 @@ bool isKeyPressed(GLFWwindow* window, int key)
     return glfwGetKey(window, key) == GLFW_PRESS;
 }
 
+bool isKeyReleased(GLFWwindow* window, int key)
+{
+    return glfwGetKey(window, key) == GLFW_RELEASE;
+}
+
 // Camera
 Camera camera;
 float lastX = WINDOW_WIDTH / 2;
@@ -160,6 +165,12 @@ int main()
                 glm::vec3( 1.5f,  0.2f, -1.5f), 
                 glm::vec3(-1.3f,  1.0f, -1.5f)  
             };
+            glm::vec3 pointLightPositions[] = {
+                glm::vec3( 0.7f,  0.2f,  2.0f),
+                glm::vec3( 2.3f, -3.3f, -4.0f),
+                glm::vec3(-4.0f,  2.0f, -12.0f),
+                glm::vec3( 0.0f,  0.0f, -3.0f)
+            };
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
@@ -217,8 +228,64 @@ int main()
             cubeShader.setInt("material.specular", 1);
             cubeShader.setFloat("material.shininess", 32.0f);
 
+            // Light colors
+            glm::vec3 lightColor{ 1.0f, 1.0f, 1.0f };
+            glm::vec3 lightAmbient = lightColor * glm::vec3{ 0.05f };
+            glm::vec3 lightDiffuse = lightColor * glm::vec3{ 0.5f };
+            glm::vec3 lightSpecular{ 1.0f };
+
+            // Direcitonal Light
+            glm::vec3 lightDir{-0.2f, -1.0f, -0.3f};
+            glm::vec3 dirLightAmbient = lightColor * glm::vec3{ 0.05f };
+            glm::vec3 dirLightDiffuse = lightColor * glm::vec3{ 0.4f };
+            glm::vec3 dirLightSpecular = lightColor * glm::vec3{ 0.5f };
+            cubeShader.setVec3("dirLight.dir", glm::value_ptr(lightDir));
+            cubeShader.setVec3("dirLight.light.ambient", glm::value_ptr(dirLightAmbient));
+            cubeShader.setVec3("dirLight.light.diffuse", glm::value_ptr(dirLightDiffuse));
+            cubeShader.setVec3("dirLight.light.specular", glm::value_ptr(dirLightSpecular));
+
+            // PointLights
+            glm::vec3 pointLightAmbient = lightColor * glm::vec3{ 0.05f };
+            glm::vec3 pointLightDiffuse = lightColor * glm::vec3{ 0.8f };
+            glm::vec3 pointLightSpecular = lightColor * glm::vec3{ 1.f };
+            float constant = 1.0f;
+            float linear = 0.09;
+            float quadratic = 0.032;
+            for(auto i = 0; i < 4; i++)
+            {
+                std::string pointLight = "pointLights[" + std::to_string(i) + "]";
+                cubeShader.setVec3(pointLight + ".pos", glm::value_ptr(pointLightPositions[i]));
+                cubeShader.setVec3(pointLight + ".light.ambient", glm::value_ptr(pointLightAmbient));
+                cubeShader.setVec3(pointLight + ".light.diffuse", glm::value_ptr(pointLightDiffuse));
+                cubeShader.setVec3(pointLight + ".light.specular", glm::value_ptr(pointLightSpecular));
+                cubeShader.setFloat(pointLight + ".attenuation.constant", constant);
+                cubeShader.setFloat(pointLight + ".attenuation.linear", linear);
+                cubeShader.setFloat(pointLight + ".attenuation.quadratic", quadratic);
+            }
+
+            // Flashlight
+            glm::vec3 spotLightAmbient = lightColor * glm::vec3{ 0.0f };
+            glm::vec3 spotLightDiffuse = lightColor * glm::vec3{ 1.f };
+            glm::vec3 spotLightSpecular = lightColor * glm::vec3{ 1.f };
+            float slConstant = 1.0f;
+            float slLinear = 0.09;
+            float slQuadratic = 0.032;
+            cubeShader.setVec3("spotLight.light.ambient", glm::value_ptr(spotLightAmbient));
+            cubeShader.setVec3("spotLight.light.diffuse", glm::value_ptr(spotLightDiffuse));
+            cubeShader.setVec3("spotLight.light.specular", glm::value_ptr(spotLightSpecular));
+            cubeShader.setFloat("spotLight.attenuation.constant", slConstant);
+            cubeShader.setFloat("spotLight.attenuation.linear", slLinear);
+            cubeShader.setFloat("spotLight.attenuation.quadratic", slQuadratic);
+            cubeShader.setFloat("spotLight.iCutOff", glm::cos(glm::radians(6.5f)));
+            cubeShader.setFloat("spotLight.oCutOff", glm::cos(glm::radians(12.0f)));
+
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
+            
+            // Light flags
+            bool lightsOn[] = {true, true, true, true};
+            bool sun = true;
+            bool flashlight = true;
 
             // Game loop
             float delta = 0;
@@ -233,6 +300,7 @@ int main()
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+                // Camera movement
                 float cameraSpeed = 2.5f * delta;
                 if(isKeyPressed(window, GLFW_KEY_W))
                     camera.ProcessKeyboard(Camera_Movement::FORWARD, delta);
@@ -245,43 +313,51 @@ int main()
                     camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
 
                 // Camera pos
+                cubeShader.use();
                 cubeShader.setVec3("viewPos", glm::value_ptr(camera.Position));
+                cubeShader.setVec3("spotLight.pos", glm::value_ptr(camera.Position));
+                cubeShader.setVec3("spotLight.dir", glm::value_ptr(camera.Front));
 
-                // Light colors
-                glm::vec3 lightColor{ 1.0f, 1.0f, 1.0f };
-                glm::vec3 lightAmbient = lightColor * glm::vec3{ 0.2f };
-                glm::vec3 lightDiffuse = lightColor * glm::vec3{ 0.5f };
-                glm::vec3 lightSpecular{ 1.0f };
-                glm::vec3 lightDir{-0.2f, -1.0f, -0.3f};
+                // Point light
                 glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
-                cubeShader.setVec3("light.pos", glm::value_ptr(camera.Position));
-                cubeShader.setVec3("light.dir", glm::value_ptr(camera.Front));
-                cubeShader.setFloat("light.iCutOff", glm::cos(glm::radians(8.5)));
-                cubeShader.setFloat("light.oCutOff", glm::cos(glm::radians(12.5)));
-                cubeShader.setVec3("light.ambient", glm::value_ptr(lightAmbient));
-                cubeShader.setVec3("light.diffuse", glm::value_ptr(lightDiffuse));
-                cubeShader.setVec3("light.specular", glm::value_ptr(lightSpecular));
-                cubeShader.setFloat("light.constant",  1.0f);
-                cubeShader.setFloat("light.linear",    0.09f);
-                cubeShader.setFloat("light.quadratic", 0.032f);	
 
                 // Transformations
                 auto view = camera.GetViewMatrix();                    
-                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
-                auto model = glm::translate(glm::mat4{1.0f}, lightPos);
-                model = glm::scale(model, glm::vec3(0.2f)); 
+                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);    
 
                 // Light
                 lightShader.use();
                 lightShader.setMatrix("view", glm::value_ptr(view));
                 lightShader.setMatrix("projection", glm::value_ptr(projection));
-                lightShader.setMatrix("model", glm::value_ptr(model));
 
-                glBindVertexArray(VAO[LIGHT]);
-                glDrawArrays(GL_TRIANGLES, 0, 36);
+                for(auto i = 0; i < 4; i++)
+                {
+                    auto model = glm::translate(glm::mat4{1.0f}, pointLightPositions[i]);
+                    model = glm::scale(model, glm::vec3(0.2f)); 
+                    lightShader.setMatrix("model", glm::value_ptr(model));
+
+                    glBindVertexArray(VAO[LIGHT]);
+                    if(lightsOn[i])
+                    glDrawArrays(GL_TRIANGLES, 0, 36);
+                }
+
+                // Light Control
+                cubeShader.use();
+                if(isKeyPressed(window, GLFW_KEY_K))
+                    sun = !sun;
+                cubeShader.setBool("sunOn", sun);
+                if(isKeyPressed(window, GLFW_KEY_L))
+                    flashlight = !flashlight;
+                cubeShader.setBool("flashlightOn", flashlight);
+
+                for(auto i = 0; i < 4; i++)
+                {   
+                    if(isKeyPressed(window, GLFW_KEY_1 + i))
+                        lightsOn[i] = !lightsOn[i];
+                    cubeShader.setBool("lightsOn["+ std::to_string(i) + "]", lightsOn[i]);
+                }
 
                 // Cubes
-                cubeShader.use();
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
                 cubeShader.setMatrix("view", glm::value_ptr(view));
                 for(unsigned int i = 0; i < 10; i++)
