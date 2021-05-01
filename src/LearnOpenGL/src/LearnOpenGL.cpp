@@ -19,6 +19,7 @@
 
 #include <Shader.h>
 #include <Camera.h>
+#include <Mesh.h>
 
 unsigned int GenTexture(std::filesystem::path path, int textureUnit = GL_TEXTURE0, int format = GL_RGB)
 {
