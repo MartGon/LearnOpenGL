@@ -110,6 +110,7 @@ int main()
         if(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
             glEnable(GL_DEPTH_TEST);
+            glDepthFunc(GL_LESS);
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
             float vertices[] = {
@@ -156,13 +157,26 @@ int main()
                 -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
                 -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
             };     
+            float planeVertices[] = {
+                // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+                5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+                -5.0f, -0.5f,  5.0f,  0.0f, 0.0f,
+                -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+
+                5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
+                -5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
+                5.0f, -0.5f, -5.0f,  2.0f, 2.0f								
+            };
             glm::vec3 pointLightPositions[] = {
                 glm::vec3( 0.7f,  0.2f,  2.0f),
                 glm::vec3( 2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f,  2.0f, -12.0f),
                 glm::vec3( 0.0f,  0.0f, -3.0f)
             };
-            
+            glm::vec3 cubePos[] = {
+                glm::vec3(2.0f, 0.0f, 0.0f),
+                glm::vec3(-1.0f, 0.0f, -1.0f)
+            };
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
@@ -173,29 +187,44 @@ int main()
             LearnOpenGL::Shader lightShader{vertexPath.generic_string().c_str(), lightFragPath.generic_string().c_str() };
             cubeShader.use();
 
-            // Model
-            stbi_set_flip_vertically_on_load(true);
-            std::filesystem::path modelsDir{MODELS_DIR};
-            std::filesystem::path backpackModelPath{modelsDir / "backpack.obj"};
-            LearnOpenGL::Model model{backpackModelPath.string().c_str()};
-            cubeShader.setFloat("material.shininess", 32.0);
-
             enum ObjIndex
             {
+                PLANE,
                 CUBE,
                 LIGHT
             };
 
             // Arrays and Buffers
-            unsigned int VAO[2];
-            glGenVertexArrays(2, VAO);
-            unsigned int VBO;
-            glGenBuffers(1, &VBO);
+            unsigned int VAO[3];
+            glGenVertexArrays(3, VAO);
+            unsigned int VBO[2];
+            glGenBuffers(2, VBO);
+
+            // Plane
+            glBindVertexArray(VAO[PLANE]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[PLANE]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
+
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0));
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+
+            // Cubes
+            glBindVertexArray(VAO[CUBE]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[CUBE]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0));
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+            glEnableVertexAttribArray(2);
 
             // Light source
             glBindVertexArray(VAO[LIGHT]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[CUBE]);
             
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
@@ -255,7 +284,7 @@ int main()
             camera.Position = glm::vec3{0, 0, 3.f};
             
             // Light flags
-            bool lightsOn[] = {true, false, false, false};
+            bool lightsOn[] = {false, false, false, false};
             bool sun = true;
             bool flashlight = true;
 
@@ -319,7 +348,6 @@ int main()
                 cubeShader.setMatrix("view", glm::value_ptr(view));
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
                 cubeShader.setMatrix("model", glm::value_ptr(pos));
-                model.Draw(cubeShader);
 
                 // Light
                 lightShader.use();
@@ -330,12 +358,32 @@ int main()
                 {
                     auto model = glm::translate(glm::mat4{1.0f}, pointLightPositions[i]);
                     model = glm::scale(model, glm::vec3(0.2f)); 
+                    auto white = glm::vec3(1.0f);
                     lightShader.setMatrix("model", glm::value_ptr(model));
+                    lightShader.setVec3("color", glm::value_ptr(white));
 
                     glBindVertexArray(VAO[LIGHT]);
                     if(lightsOn[i])
                         glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
+
+                for(auto i = 0; i < 2; i++)
+                {
+                    auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
+                    lightShader.setMatrix("model", glm::value_ptr(model));
+                    auto color = glm::vec3{0.0f};
+                    lightShader.setVec3("color", glm::value_ptr(color));
+                    glBindVertexArray(VAO[CUBE]);
+                    glDrawArrays(GL_TRIANGLES, 0, 36);
+                }
+
+                // Floor
+                glBindVertexArray(VAO[PLANE]);
+                glm::mat4 model{1.0f};
+                glm::vec3 color{0.5f};
+                lightShader.setMatrix("model", glm::value_ptr(model));
+                lightShader.setVec3("color", glm::value_ptr(color));
+                glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 glfwPollEvents();
                 
