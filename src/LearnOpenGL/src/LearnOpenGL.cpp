@@ -1,9 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -20,6 +17,7 @@
 #include <Shader.h>
 #include <Camera.h>
 #include <Mesh.h>
+#include <Model.h>
 
 unsigned int GenTexture(std::filesystem::path path, int textureUnit = GL_TEXTURE0, int format = GL_RGB)
 {
@@ -157,25 +155,14 @@ int main()
                 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
                 -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
                 -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-            };         
-            glm::vec3 cubePos[] = {
-                glm::vec3( 0.0f,  0.0f,  0.0f), 
-                glm::vec3( 2.0f,  5.0f, -15.0f), 
-                glm::vec3(-1.5f, -2.2f, -2.5f),  
-                glm::vec3(-3.8f, -2.0f, -12.3f),  
-                glm::vec3( 2.4f, -0.4f, -3.5f),  
-                glm::vec3(-1.7f,  3.0f, -7.5f),  
-                glm::vec3( 1.3f, -2.0f, -2.5f),  
-                glm::vec3( 1.5f,  2.0f, -2.5f), 
-                glm::vec3( 1.5f,  0.2f, -1.5f), 
-                glm::vec3(-1.3f,  1.0f, -1.5f)  
-            };
+            };     
             glm::vec3 pointLightPositions[] = {
                 glm::vec3( 0.7f,  0.2f,  2.0f),
                 glm::vec3( 2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f,  2.0f, -12.0f),
                 glm::vec3( 0.0f,  0.0f, -3.0f)
             };
+            
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
@@ -185,6 +172,13 @@ int main()
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
             LearnOpenGL::Shader lightShader{vertexPath.generic_string().c_str(), lightFragPath.generic_string().c_str() };
             cubeShader.use();
+
+            // Model
+            stbi_set_flip_vertically_on_load(true);
+            std::filesystem::path modelsDir{MODELS_DIR};
+            std::filesystem::path backpackModelPath{modelsDir / "backpack.obj"};
+            LearnOpenGL::Model model{backpackModelPath.string().c_str()};
+            cubeShader.setFloat("material.shininess", 32.0);
 
             enum ObjIndex
             {
@@ -198,40 +192,13 @@ int main()
             unsigned int VBO;
             glGenBuffers(1, &VBO);
 
-            // Cube
-            glBindVertexArray(VAO[CUBE]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
-            glEnableVertexAttribArray(0);
-
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-            glEnableVertexAttribArray(1);
-
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-            glEnableVertexAttribArray(2);
-
             // Light source
             glBindVertexArray(VAO[LIGHT]);
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
             
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
-
-            // Textures
-            std::filesystem::path texturesDir{TEXTURES_DIR};
-            std::filesystem::path texturePath = texturesDir / "container2.png";
-            auto texture = GenTexture(texturePath, GL_TEXTURE0, GL_RGBA);
-
-            std::filesystem::path specularPath = texturesDir / "container2_specular.png";
-            auto specularMap = GenTexture(specularPath, GL_TEXTURE1, GL_RGBA);
-
-            // Set material properties
-            cubeShader.use();
-            cubeShader.setInt("material.diffuse", 0);
-            cubeShader.setInt("material.specular", 1);
-            cubeShader.setFloat("material.shininess", 32.0f);
 
             // Light colors
             glm::vec3 lightColor{ 1.0f, 1.0f, 1.0f };
@@ -288,7 +255,7 @@ int main()
             camera.Position = glm::vec3{0, 0, 3.f};
             
             // Light flags
-            bool lightsOn[] = {true, true, true, true};
+            bool lightsOn[] = {true, false, false, false};
             bool sun = true;
             bool flashlight = true;
 
@@ -323,29 +290,6 @@ int main()
                 cubeShader.setVec3("spotLight.pos", glm::value_ptr(camera.Position));
                 cubeShader.setVec3("spotLight.dir", glm::value_ptr(camera.Front));
 
-                // Point light
-                glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
-
-                // Transformations
-                auto view = camera.GetViewMatrix();                    
-                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);    
-
-                // Light
-                lightShader.use();
-                lightShader.setMatrix("view", glm::value_ptr(view));
-                lightShader.setMatrix("projection", glm::value_ptr(projection));
-
-                for(auto i = 0; i < 4; i++)
-                {
-                    auto model = glm::translate(glm::mat4{1.0f}, pointLightPositions[i]);
-                    model = glm::scale(model, glm::vec3(0.2f)); 
-                    lightShader.setMatrix("model", glm::value_ptr(model));
-
-                    glBindVertexArray(VAO[LIGHT]);
-                    if(lightsOn[i])
-                    glDrawArrays(GL_TRIANGLES, 0, 36);
-                }
-
                 // Light Control
                 cubeShader.use();
                 if(isKeyPressed(window, GLFW_KEY_K))
@@ -362,24 +306,36 @@ int main()
                     cubeShader.setBool("lightsOn["+ std::to_string(i) + "]", lightsOn[i]);
                 }
 
-                // Cubes
-                cubeShader.setMatrix("projection", glm::value_ptr(projection));
+                // Transformations
+                auto view = camera.GetViewMatrix();                    
+                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);    
+
+                // Model
+                glm::mat4 pos{1.0f};
+                pos = glm::translate(pos, glm::vec3{0.0f, 0.0f, 0.0f});
+                pos = glm::scale(pos, glm::vec3(1.0f, 1.0f, 1.0f));
+
+                cubeShader.use();
                 cubeShader.setMatrix("view", glm::value_ptr(view));
-                for(unsigned int i = 0; i < 10; i++)
+                cubeShader.setMatrix("projection", glm::value_ptr(projection));
+                cubeShader.setMatrix("model", glm::value_ptr(pos));
+                model.Draw(cubeShader);
+
+                // Light
+                lightShader.use();
+                lightShader.setMatrix("view", glm::value_ptr(view));
+                lightShader.setMatrix("projection", glm::value_ptr(projection));
+
+                for(auto i = 0; i < 4; i++)
                 {
-                    glm::mat4 model = glm::mat4(1.0f);
-                    model = glm::translate(model, cubePos[i]);
-                    float angle = 20.0f * i;
-                    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-                    cubeShader.setMatrix("model", glm::value_ptr(model));
+                    auto model = glm::translate(glm::mat4{1.0f}, pointLightPositions[i]);
+                    model = glm::scale(model, glm::vec3(0.2f)); 
+                    lightShader.setMatrix("model", glm::value_ptr(model));
 
-                    // Draw
-                    // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
-                    glBindVertexArray(VAO[CUBE]);
-                    glDrawArrays(GL_TRIANGLES, 0, 36);
+                    glBindVertexArray(VAO[LIGHT]);
+                    if(lightsOn[i])
+                        glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
-
-
 
                 glfwPollEvents();
                 

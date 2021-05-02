@@ -67,8 +67,8 @@ uniform SpotLight spotLight;
 // Material
 struct Material
 {
-    sampler2D diffuse;
-    sampler2D specular;
+    sampler2D texture_diffuse1;
+    sampler2D texture_specular1;
     float shininess;
 };
 uniform Material material;
@@ -166,13 +166,13 @@ Light CalcColor(Light light, vec3 lightDir, vec3 normal)
 
 vec3 CalcAmbient(Light light)
 {
-    return light.ambient * vec3(texture(material.diffuse, textureCoords));
+    return light.ambient * vec3(texture(material.texture_diffuse1, textureCoords));
 }
 
 vec3 CalcDiffuse(Light light, vec3 lightDir, vec3 normal)
 {
     float diff = max(dot(-lightDir, normal), 0.0);
-    return light.diffuse * diff * texture(material.diffuse, textureCoords).rgb;
+    return light.diffuse * diff * texture(material.texture_diffuse1, textureCoords).rgb;
 }
 
 vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
@@ -181,5 +181,5 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
     vec3 viewDir = normalize(viewPos - fragPos);
     float spec = pow(max(dot(reflected, viewDir), 0.0), material.shininess);
 
-    return light.specular * spec * texture(material.specular, textureCoords).rgb;
+    return light.specular * spec * texture(material.texture_specular1, textureCoords).rgb;
 }
