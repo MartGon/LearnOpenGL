@@ -106,8 +106,11 @@ void main()
     if(flashlightOn)
         color += CalcSpotLight(spotLight, normal);
 
+    vec4 textureColor = texture(material.texture_diffuse1, textureCoords);
+    if(textureColor.a < 0.1)
+        discard;
 
-    fragColor = vec4(color, 1.0f);
+    fragColor = vec4(textureColor.rgb, 1.0f);
 }
 
 vec3 CalcDirLight(DirLight dirLight, vec3 normal)

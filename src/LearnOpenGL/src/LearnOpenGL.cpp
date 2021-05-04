@@ -30,7 +30,7 @@ unsigned int GenTexture(std::filesystem::path path, int textureUnit = GL_TEXTURE
     auto data = stbi_load(path.string().c_str(), &width, &height, &nrChannels, 0);
     if(data)
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
@@ -113,6 +113,7 @@ int main()
             glDepthFunc(GL_LESS);
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
+            // Models' vertices
             float vertices[] = {
                 // positions          // normals           // texture coords
                 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
@@ -156,7 +157,17 @@ int main()
                 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
                 -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
                 -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-            };     
+            };
+            float quad[] = {
+                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,
+                -0.5f, 0.5f, 0.0f,   0.0f, 1.0f,
+                0.5f, 0.5f, 0.0f,   1.0f, 1.0f,
+                0.5f, 0.5f, 0.0f,   1.0f, 1.0f,
+                0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
+                -0.5f, -0.5f, 0.0f,   0.0f, 0.0f
+            };
+
+            // Positions
             float planeVertices[] = {
                 // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
                 5.0f, -0.5f,  5.0f,  2.0f, 0.0f,
@@ -177,6 +188,13 @@ int main()
                 glm::vec3(2.0f, 0.0f, 0.0f),
                 glm::vec3(-1.0f, 0.0f, -1.0f)
             };
+            glm::vec3 grassPos[] = {
+                glm::vec3(-1.5f,  0.0f, -0.48f),
+                glm::vec3( 1.5f,  0.0f,  0.51f),
+                glm::vec3( 0.0f,  0.0f,  0.7f),
+                glm::vec3(-0.3f,  0.0f, -2.3f),
+                glm::vec3( 0.5f,  0.0f, -0.6f)
+            };
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
@@ -191,14 +209,15 @@ int main()
             {
                 PLANE,
                 CUBE,
-                LIGHT
+                LIGHT,
+                QUAD
             };
 
             // Arrays and Buffers
-            unsigned int VAO[3];
-            glGenVertexArrays(3, VAO);
-            unsigned int VBO[2];
-            glGenBuffers(2, VBO);
+            unsigned int VAO[4];
+            glGenVertexArrays(4, VAO);
+            unsigned int VBO[4];
+            glGenBuffers(4, VBO);
 
             // Plane
             glBindVertexArray(VAO[PLANE]);
@@ -224,10 +243,32 @@ int main()
 
             // Light source
             glBindVertexArray(VAO[LIGHT]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[CUBE]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[LIGHT]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
             
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
+
+            // Quad
+            glBindVertexArray(VAO[QUAD]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD]);
+
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
+            glEnableVertexAttribArray(0);
+
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+            glEnableVertexAttribArray(2);
+
+            glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+
+            // Textures
+            std::filesystem::path texturesDir{TEXTURES_DIR};
+            std::filesystem::path grassTexturePath{texturesDir / "grass.png"};
+            stbi_set_flip_vertically_on_load(true);
+            auto texture = GenTexture(grassTexturePath, GL_TEXTURE0, GL_RGBA);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            cubeShader.setInt("material.texture_diffuse1", 0);
 
             // Light colors
             glm::vec3 lightColor{ 1.0f, 1.0f, 1.0f };
@@ -354,6 +395,7 @@ int main()
                 lightShader.setMatrix("view", glm::value_ptr(view));
                 lightShader.setMatrix("projection", glm::value_ptr(projection));
 
+                // Lights
                 for(auto i = 0; i < 4; i++)
                 {
                     auto model = glm::translate(glm::mat4{1.0f}, pointLightPositions[i]);
@@ -367,20 +409,32 @@ int main()
                         glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
 
+                // Cubes
                 for(auto i = 0; i < 2; i++)
                 {
                     auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
                     lightShader.setMatrix("model", glm::value_ptr(model));
-                    auto color = glm::vec3{0.0f};
+                    auto color = glm::vec3{(float)i};
                     lightShader.setVec3("color", glm::value_ptr(color));
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
+                }
+
+                // Quads
+                for(auto i = 0; i < 5; i++)
+                {
+                    auto model = glm::translate(glm::mat4{1.0f}, grassPos[i]);
+                    cubeShader.use();
+                    cubeShader.setMatrix("model", glm::value_ptr(model));
+                    glBindVertexArray(VAO[QUAD]);
+                    glDrawArrays(GL_TRIANGLES, 0, 6);
                 }
 
                 // Floor
                 glBindVertexArray(VAO[PLANE]);
                 glm::mat4 model{1.0f};
                 glm::vec3 color{0.5f};
+                lightShader.use();
                 lightShader.setMatrix("model", glm::value_ptr(model));
                 lightShader.setVec3("color", glm::value_ptr(color));
                 glDrawArrays(GL_TRIANGLES, 0, 36);
