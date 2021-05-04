@@ -109,8 +109,12 @@ int main()
 
         if(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {
+            glEnable(GL_BLEND);   
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
+
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
             // Models' vertices
@@ -185,10 +189,10 @@ int main()
                 glm::vec3( 0.0f,  0.0f, -3.0f)
             };
             glm::vec3 cubePos[] = {
-                glm::vec3(2.0f, 0.0f, 0.0f),
-                glm::vec3(-1.0f, 0.0f, -1.0f)
+                glm::vec3(1.5f, 0.0f, 0.0f),
+                glm::vec3(-1.5f, 0.0f, -1.0f)
             };
-            glm::vec3 grassPos[] = {
+            std::vector<glm::vec3> grassPos = {
                 glm::vec3(-1.5f,  0.0f, -0.48f),
                 glm::vec3( 1.5f,  0.0f,  0.51f),
                 glm::vec3( 0.0f,  0.0f,  0.7f),
@@ -263,7 +267,7 @@ int main()
 
             // Textures
             std::filesystem::path texturesDir{TEXTURES_DIR};
-            std::filesystem::path grassTexturePath{texturesDir / "grass.png"};
+            std::filesystem::path grassTexturePath{texturesDir / "blending_transparent_window.png"};
             stbi_set_flip_vertically_on_load(true);
             auto texture = GenTexture(grassTexturePath, GL_TEXTURE0, GL_RGBA);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -395,6 +399,15 @@ int main()
                 lightShader.setMatrix("view", glm::value_ptr(view));
                 lightShader.setMatrix("projection", glm::value_ptr(projection));
 
+                // Floor
+                glBindVertexArray(VAO[PLANE]);
+                glm::mat4 model{1.0f};
+                glm::vec3 color{0.5f};
+                lightShader.use();
+                lightShader.setMatrix("model", glm::value_ptr(model));
+                lightShader.setVec3("color", glm::value_ptr(color));
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+
                 // Lights
                 for(auto i = 0; i < 4; i++)
                 {
@@ -414,13 +427,22 @@ int main()
                 {
                     auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
                     lightShader.setMatrix("model", glm::value_ptr(model));
-                    auto color = glm::vec3{(float)i};
+                    auto color = glm::vec3{1.0f, 1.0f, 0.0f};
                     lightShader.setVec3("color", glm::value_ptr(color));
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
 
                 // Quads
+                auto sort = [&view](const glm::vec3& a, const glm::vec3& b)
+                {
+                    auto tA = glm::vec4(a, 1) * view;
+                    auto tB = glm::vec4(b, 1) * view;
+
+                    return tA.z < tB.z;
+                };
+                std::sort(grassPos.begin(), grassPos.end(), sort);
+
                 for(auto i = 0; i < 5; i++)
                 {
                     auto model = glm::translate(glm::mat4{1.0f}, grassPos[i]);
@@ -429,15 +451,6 @@ int main()
                     glBindVertexArray(VAO[QUAD]);
                     glDrawArrays(GL_TRIANGLES, 0, 6);
                 }
-
-                // Floor
-                glBindVertexArray(VAO[PLANE]);
-                glm::mat4 model{1.0f};
-                glm::vec3 color{0.5f};
-                lightShader.use();
-                lightShader.setMatrix("model", glm::value_ptr(model));
-                lightShader.setVec3("color", glm::value_ptr(color));
-                glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 glfwPollEvents();
                 

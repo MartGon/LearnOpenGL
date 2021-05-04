@@ -110,7 +110,7 @@ void main()
     if(textureColor.a < 0.1)
         discard;
 
-    fragColor = vec4(textureColor.rgb, 1.0f);
+    fragColor = textureColor;
 }
 
 vec3 CalcDirLight(DirLight dirLight, vec3 normal)
