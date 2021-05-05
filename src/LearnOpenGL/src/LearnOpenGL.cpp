@@ -115,52 +115,55 @@ int main()
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LESS);
 
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
             // Models' vertices
             float vertices[] = {
-                // positions          // normals           // texture coords
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-                0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-                -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-                -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-                0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-                0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-                0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+                // Back face
+                -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // Bottom-left
+                0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+                0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // bottom-right         
+                0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right
+                -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // bottom-left
+                -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+                // Front face
+                -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+                0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+                0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+                0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // top-right
+                -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // top-left
+                -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left
+                // Left face
+                -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+                -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-left
+                -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+                -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-left
+                -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+                -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-right
+                // Right face
+                0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+                0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+                0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right         
+                0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // bottom-right
+                0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // top-left
+                0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-left     
+                // Bottom face
+                -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+                0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // top-left
+                0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+                0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // bottom-left
+                -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // bottom-right
+                -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // top-right
+                // Top face
+                -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+                0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+                0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // top-right     
+                0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // bottom-right
+                -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
+                -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left   
             };
             float quad[] = {
                 -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,
@@ -238,12 +241,10 @@ int main()
             glBindBuffer(GL_ARRAY_BUFFER, VBO[CUBE]);
             glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0));
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0));
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-            glEnableVertexAttribArray(2);
 
             // Light source
             glBindVertexArray(VAO[LIGHT]);
@@ -423,6 +424,7 @@ int main()
                 }
 
                 // Cubes
+                glEnable(GL_CULL_FACE);
                 for(auto i = 0; i < 2; i++)
                 {
                     auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
@@ -432,6 +434,7 @@ int main()
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
+                glDisable(GL_CULL_FACE);
 
                 // Quads
                 auto sort = [&view](const glm::vec3& a, const glm::vec3& b)
