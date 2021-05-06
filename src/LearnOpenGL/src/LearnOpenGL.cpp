@@ -391,14 +391,16 @@ int main()
 
                     return distA < distB;
                 });
+
                 for(auto i = 0; i < 2; i++)
                 {
+                    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                     glStencilFunc(GL_ALWAYS, 1, 0xFF); // Always writes over buffer values a 1 
                     glStencilMask(0xFF); // The value to be written is unchanged
-                    glEnable(GL_DEPTH_TEST);
+                    //glEnable(GL_DEPTH_TEST);
 
                     // Draw cube
-                    auto model = glm::translate(glm::mat4{1.0f}, cubePosVec[i]);
+                    auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
                     lightShader.setMatrix("model", glm::value_ptr(model));
                     auto color = glm::vec3{0.3f, 0.5f, (float)i};
                     lightShader.setVec3("color", glm::value_ptr(color));
@@ -418,6 +420,7 @@ int main()
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
 
+                    glStencilMask(0xFF);
                     glClear(GL_STENCIL_BUFFER_BIT);
                 }
 
