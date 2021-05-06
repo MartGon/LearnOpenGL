@@ -355,7 +355,7 @@ int main()
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
                 cubeShader.setMatrix("model", glm::value_ptr(pos));
 
-                // Light
+                // Lights
                 lightShader.use();
                 lightShader.setMatrix("view", glm::value_ptr(view));
                 lightShader.setMatrix("projection", glm::value_ptr(projection));
@@ -375,41 +375,36 @@ int main()
 
                 // Floor           
                 glStencilMask(0x00);
-                glBindVertexArray(VAO[PLANE]);
                 glm::mat4 model{1.0f};
                 glm::vec3 color{0.5f};
+                lightShader.use();
                 lightShader.setMatrix("model", glm::value_ptr(model));
                 lightShader.setVec3("color", glm::value_ptr(color));
+                lightShader.setBool("border", false);
+                glBindVertexArray(VAO[PLANE]);
                 glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 // Cubes
-                std::vector<glm::vec3> cubePosVec{cubePos[0], cubePos[1]};
-                auto cameraPos = camera.Position;
-                std::sort(cubePosVec.begin(), cubePosVec.end(), [&cameraPos](const glm::vec3& a, const glm::vec3& b){
-                    auto distA = glm::length(a - cameraPos);
-                    auto distB = glm::length(b - cameraPos);
-
-                    return distA < distB;
-                });
-
                 for(auto i = 0; i < 2; i++)
                 {
-                    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+                    glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
                     glStencilFunc(GL_ALWAYS, 1, 0xFF); // Always writes over buffer values a 1 
-                    glStencilMask(0xFF); // The value to be written is unchanged
-                    //glEnable(GL_DEPTH_TEST);
+                    glStencilMask(0xFF); // The value to be written is unchange
 
                     // Draw cube
                     auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
-                    lightShader.setMatrix("model", glm::value_ptr(model));
                     auto color = glm::vec3{0.3f, 0.5f, (float)i};
+                    lightShader.setMatrix("model", glm::value_ptr(model));
                     lightShader.setVec3("color", glm::value_ptr(color));
+                    lightShader.setBool("border", false);
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
-
+                    
+                    
                     // Draw outline
                     glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // Accept values in buffer positions that are not 1
                     glStencilMask(0x00); // Doens't override stencil buffer
+
                     //glDisable(GL_DEPTH_TEST);
                     
                     glm::vec3 scale{1.0f, 1.0f, 1.0f};
@@ -417,39 +412,37 @@ int main()
                     model = glm::scale(model, scale * 1.1f);
                     lightShader.setMatrix("model", glm::value_ptr(model));
                     lightShader.setVec3("color", glm::value_ptr(color));
+                    lightShader.setBool("border", true);
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
 
                     glStencilMask(0xFF);
                     glClear(GL_STENCIL_BUFFER_BIT);
                 }
-
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                glStencilMask(0xFF);
-                glEnable(GL_DEPTH_TEST);
-
-                /*
+                
                 // Cubes' Outline
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-                glStencilMask(0x00);
+                /*
                 glDisable(GL_DEPTH_TEST);
                 for(auto i = 0; i < 2; i++)
                 {
+                    glStencilFunc(GL_NOTEQUAL, i + 1, 0xFF);
+                    glStencilMask(0x00);
+
                     auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
                     glm::vec3 scale{1.0f, 1.0f, 1.0f};
                     model = glm::scale(model, scale * 1.1f);
                     lightShader.setMatrix("model", glm::value_ptr(model));
-                    auto color = glm::vec3{1.f, 1.f, 1.f};
+                    auto color = glm::vec3{1.f, 1.f, i};
                     lightShader.setVec3("color", glm::value_ptr(color));
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
+                */
 
                 glStencilFunc(GL_ALWAYS, 1, 0xFF);
                 glStencilMask(0xFF);
                 glEnable(GL_DEPTH_TEST);
-                */
-
+                
                 glfwPollEvents();
                 
                 // Swap buffers
