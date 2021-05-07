@@ -6,6 +6,7 @@ layout (location = 2) in vec2 aTextureCoords;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform bool border;
 
 out vec3 normal;
 out vec3 fragPos;
@@ -21,4 +22,6 @@ void main()
     mat3 normalMatrix = mat3(transpose(inverse(model)));
     normal = normalMatrix * aNormal;
     fragPos = vec3(model * vec4(aPos, 1.0));
+    if(border)
+        gl_Position.z = 0.0;
 }
