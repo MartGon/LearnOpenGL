@@ -165,13 +165,21 @@ int main()
                 -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // top-left
                 -0.5f,  0.5f,  0.5f,  0.0f, 0.0f  // bottom-left   
             };
-            float quad[] = {
+            float quad3dPos[] = {
                 -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,
                 -0.5f, 0.5f, 0.0f,   0.0f, 1.0f,
                 0.5f, 0.5f, 0.0f,   1.0f, 1.0f,
                 0.5f, 0.5f, 0.0f,   1.0f, 1.0f,
                 0.5f, -0.5f, 0.0f,   1.0f, 0.0f,
                 -0.5f, -0.5f, 0.0f,   0.0f, 0.0f
+            };
+            float quad[] = {
+                -0.5f, -0.5f,   0.0f, 0.0f,
+                -0.5f, 0.5f,    0.0f, 1.0f,
+                0.5f, 0.5f,    1.0f, 1.0f,
+                0.5f, 0.5f,    1.0f, 1.0f,
+                0.5f, -0.5f,   1.0f, 0.0f,
+                -0.5f, -0.5f,   0.0f, 0.0f
             };
 
             // Positions
@@ -208,8 +216,13 @@ int main()
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
             std::filesystem::path lightFragPath = shaderFolder / "lightFrag.glsl";
+            std::filesystem::path quadVertexPath = shaderFolder / "quadVertex.glsl";
+            std::filesystem::path quadFragPath = shaderFolder / "quadFrag.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
             LearnOpenGL::Shader lightShader{vertexPath.generic_string().c_str(), lightFragPath.generic_string().c_str() };
+            LearnOpenGL::Shader quadShader{quadVertexPath.generic_string().c_str(), quadFragPath.generic_string().c_str() };
+            quadShader.use();
+            quadShader.setInt("screenTexture", 0);
             cubeShader.use();
 
             enum ObjIndex
@@ -217,14 +230,47 @@ int main()
                 PLANE,
                 CUBE,
                 LIGHT,
-                QUAD
+                QUAD,
+                QUAD_3DPOS
             };
 
+            // FrameBuffer
+            unsigned int framebuffer;
+            glGenFramebuffers(1, &framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+            // Generate target texture
+            unsigned int targetTexture;
+            glGenTextures(1, &targetTexture);
+            glBindTexture(GL_TEXTURE_2D, targetTexture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, targetTexture, 0);
+
+            // RenderBuffer for Stencil and Depth testing
+            unsigned int renderbuffer;
+            glGenRenderbuffers(1, &renderbuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer);
+
+            if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            {
+                std::cout << "Framebuffer is not complete. ABORTING!!!\n";
+                return -1;
+            }
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
             // Arrays and Buffers
-            unsigned int VAO[4];
-            glGenVertexArrays(4, VAO);
-            unsigned int VBO[4];
-            glGenBuffers(4, VBO);
+            unsigned int VAO[5];
+            glGenVertexArrays(5, VAO);
+            unsigned int VBO[5];
+            glGenBuffers(5, VBO);
 
             // Plane
             glBindVertexArray(VAO[PLANE]);
@@ -255,14 +301,26 @@ int main()
             glEnableVertexAttribArray(0);
 
             // Quad
-            glBindVertexArray(VAO[QUAD]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD]);
+            glBindVertexArray(VAO[QUAD_3DPOS]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD_3DPOS]);
 
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
 
             glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(2);
+
+            glBufferData(GL_ARRAY_BUFFER, sizeof(quad3dPos), quad3dPos, GL_STATIC_DRAW);
+
+            // Quad 3D Pos
+            glBindVertexArray(VAO[QUAD]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD]);
+
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(0 * sizeof(float)));
+            glEnableVertexAttribArray(0);
+
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+            glEnableVertexAttribArray(1);
 
             glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
 
@@ -343,9 +401,13 @@ int main()
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
 
+                // Bind
+                glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                glEnable(GL_DEPTH_TEST);
 
                 // Camera movement
                 float cameraSpeed = 2.5f * delta;
@@ -446,15 +508,28 @@ int main()
                 };
                 std::sort(grassPos.begin(), grassPos.end(), sort);
 
+                glBindTexture(GL_TEXTURE_2D, texture);
+                glEnable(GL_DEPTH_TEST);
                 for(auto i = 0; i < 5; i++)
                 {
                     auto model = glm::translate(glm::mat4{1.0f}, grassPos[i]);
                     cubeShader.use();
                     cubeShader.setMatrix("model", glm::value_ptr(model));
-                    glBindVertexArray(VAO[QUAD]);
+                    glBindVertexArray(VAO[QUAD_3DPOS]);
                     glDrawArrays(GL_TRIANGLES, 0, 6);
                 }
 
+                // Draw quad with the framebuffer texture 
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                quadShader.use();
+                glBindVertexArray(VAO[QUAD]);
+                glDisable(GL_DEPTH_TEST);
+                glBindTexture(GL_TEXTURE_2D, targetTexture);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+                
                 glfwPollEvents();
                 
                 // Swap buffers
