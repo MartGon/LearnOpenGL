@@ -145,7 +145,7 @@ int main()
         if(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {            
             glEnable(GL_DEPTH_TEST);
-            glDepthFunc(GL_LESS);
+            glDepthFunc(GL_LEQUAL);
 
             glEnable(GL_CULL_FACE);
             glCullFace(GL_BACK);
@@ -338,22 +338,9 @@ int main()
                 auto view = camera.GetViewMatrix();                    
                 auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);    
                 cubeShader.use();
+                cubeShader.setBool("skybox", false);
                 cubeShader.setMatrix("view", glm::value_ptr(view));
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
-
-                // Skybox
-                glm::mat4 model{1.0f};
-                glm::mat4 skyView = glm::mat4(glm::mat3(view));
-                
-                skyShader.use();
-                skyShader.setMatrix("view", glm::value_ptr(skyView));
-                skyShader.setMatrix("projection", glm::value_ptr(projection));
-                skyShader.setMatrix("model", glm::value_ptr(model));
-                glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
-                glBindVertexArray(VAO[SKYBOX]);
-                glDepthMask(GL_FALSE);
-                glDrawArrays(GL_TRIANGLES, 0, 36);
-                glDepthMask(GL_TRUE);
 
                 // Cubes
                 glEnable(GL_CULL_FACE);
@@ -366,6 +353,19 @@ int main()
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
                 glDisable(GL_CULL_FACE);
+
+                // Skybox
+                glm::mat4 model{1.0f};
+                glm::mat4 skyView = glm::mat4(glm::mat3(view));
+                
+                skyShader.use();
+                skyShader.setBool("skybox", true);
+                skyShader.setMatrix("view", glm::value_ptr(skyView));
+                skyShader.setMatrix("projection", glm::value_ptr(projection));
+                skyShader.setMatrix("model", glm::value_ptr(model));
+                glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+                glBindVertexArray(VAO[SKYBOX]);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
                 
                 glfwPollEvents();
                 
