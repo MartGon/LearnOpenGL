@@ -193,50 +193,7 @@ int main()
                 -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
                 -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
             };
-            float skyboxVertices[] = {
-                // positions          
-                -1.0f,  1.0f, -1.0f,
-                -1.0f, -1.0f, -1.0f,
-                1.0f, -1.0f, -1.0f,
-                1.0f, -1.0f, -1.0f,
-                1.0f,  1.0f, -1.0f,
-                -1.0f,  1.0f, -1.0f,
 
-                -1.0f, -1.0f,  1.0f,
-                -1.0f, -1.0f, -1.0f,
-                -1.0f,  1.0f, -1.0f,
-                -1.0f,  1.0f, -1.0f,
-                -1.0f,  1.0f,  1.0f,
-                -1.0f, -1.0f,  1.0f,
-
-                1.0f, -1.0f, -1.0f,
-                1.0f, -1.0f,  1.0f,
-                1.0f,  1.0f,  1.0f,
-                1.0f,  1.0f,  1.0f,
-                1.0f,  1.0f, -1.0f,
-                1.0f, -1.0f, -1.0f,
-
-                -1.0f, -1.0f,  1.0f,
-                -1.0f,  1.0f,  1.0f,
-                1.0f,  1.0f,  1.0f,
-                1.0f,  1.0f,  1.0f,
-                1.0f, -1.0f,  1.0f,
-                -1.0f, -1.0f,  1.0f,
-
-                -1.0f,  1.0f, -1.0f,
-                1.0f,  1.0f, -1.0f,
-                1.0f,  1.0f,  1.0f,
-                1.0f,  1.0f,  1.0f,
-                -1.0f,  1.0f,  1.0f,
-                -1.0f,  1.0f, -1.0f,
-
-                -1.0f, -1.0f, -1.0f,
-                -1.0f, -1.0f,  1.0f,
-                1.0f, -1.0f, -1.0f,
-                1.0f, -1.0f, -1.0f,
-                -1.0f, -1.0f,  1.0f,
-                1.0f, -1.0f,  1.0f
-            };
 
             // Positions
             glm::vec3 cubePos[] = {
@@ -248,34 +205,16 @@ int main()
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
-            std::filesystem::path skyboxFragPath = shaderFolder / "skyboxFrag.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
-            LearnOpenGL::Shader skyShader{vertexPath.generic_string().c_str(), skyboxFragPath.generic_string().c_str() };
+            LearnOpenGL::Shader greenShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
+            LearnOpenGL::Shader redShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
+            LearnOpenGL::Shader blueShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
             cubeShader.use();
-
-            // Textures - 2D
-            std::filesystem::path texturesDir{TEXTURES_DIR};
-            std::filesystem::path texturePath{texturesDir / "container.jpg"};
-            auto texture = GenTexture(texturePath, GL_TEXTURE0, GL_RGB);
-            cubeShader.setInt("Texture", 0);
-
-            // Texture - Cubemap
-            std::vector<std::filesystem::path> faces = {
-                GetRelativePath(texturesDir, "right.jpg"),
-                GetRelativePath(texturesDir, "left.jpg"),
-                GetRelativePath(texturesDir, "top.jpg"),
-                GetRelativePath(texturesDir, "bottom.jpg"),
-                GetRelativePath(texturesDir, "front.jpg"),
-                GetRelativePath(texturesDir, "back.jpg")
-            };
-            unsigned int cubemap = GenCubeMap(faces);
-            skyShader.use();
-            skyShader.setInt("Texture", 0);
 
             enum ObjIndex
             {
                 CUBE,
-                SKYBOX
+                UNIFORM
             };
 
             // Arrays and Buffers
@@ -293,19 +232,18 @@ int main()
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
+            
+            // Uniform
+            glBindBuffer(GL_UNIFORM_BUFFER, VAO[UNIFORM]);
+            glBufferData(GL_UNIFORM_BUFFER, 2* sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-            // Skybox
-            glBindVertexArray(VAO[SKYBOX]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[SKYBOX]);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
+            glBindBufferBase(GL_UNIFORM_BUFFER, 0, VAO[UNIFORM]);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0));
-            glEnableVertexAttribArray(0);
-
-            // Model
-            std::filesystem::path modelsDir{MODELS_DIR};
-            std::filesystem::path modelPath{modelsDir / "backpack.obj"};
-            LearnOpenGL::Model model{modelPath};
+            auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);   
+            glBindBuffer(GL_UNIFORM_BUFFER, VAO[UNIFORM]);
+            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
@@ -336,40 +274,34 @@ int main()
                     camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
 
                 // Transformations
-                auto view = camera.GetViewMatrix();                    
-                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);    
-                cubeShader.use();
-                cubeShader.setBool("skybox", false);
-                cubeShader.setVec3("cameraPos", glm::value_ptr(camera.Position));
-                cubeShader.setMatrix("view", glm::value_ptr(view));
-                cubeShader.setMatrix("projection", glm::value_ptr(projection));
+                auto view = camera.GetViewMatrix();      
+                glBindBuffer(GL_UNIFORM_BUFFER, VAO[UNIFORM]);
+                glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+                glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
                 // Cubes
-                for(auto i = 0; i < 1; i++)
+                for(auto i = 0; i < 2; i++)
                 {
                     cubeShader.use();
                     auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
+                    auto color = glm::vec4(1.0f, 1.0f, i, 1.0f);
                     cubeShader.setMatrix("model", glm::value_ptr(model));
+                    cubeShader.setVec3("color", glm::value_ptr(color));
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
 
-                // Model
-                glm::mat4 modelMat = glm::translate(glm::mat4{1.0f}, cubePos[1]);
-                cubeShader.setMatrix("model", glm::value_ptr(modelMat));
-                model.Draw(cubeShader);
-
-                // Skybox
-                glm::mat4 model{1.0f};
-                glm::mat4 skyView = glm::mat4(glm::mat3(view));
-                
-                skyShader.use();
-                skyShader.setBool("skybox", true);
-                skyShader.setMatrix("view", glm::value_ptr(skyView));
-                skyShader.setMatrix("projection", glm::value_ptr(projection));
-                skyShader.setMatrix("model", glm::value_ptr(model));
-                glBindVertexArray(VAO[SKYBOX]);
-                glDrawArrays(GL_TRIANGLES, 0, 36);
+                for(auto i = 0; i < 2; i++)
+                {
+                    greenShader.use();
+                    auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
+                    model = glm::translate(model, cubePos[i]);
+                    auto color = glm::vec4(i, 1.0f, i, 1.0f);
+                    greenShader.setMatrix("model", glm::value_ptr(model));
+                    greenShader.setVec3("color", glm::value_ptr(color));
+                    glBindVertexArray(VAO[CUBE]);
+                    glDrawArrays(GL_TRIANGLES, 0, 36);
+                }
                 
                 glfwPollEvents();
                 
