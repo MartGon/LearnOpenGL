@@ -23,9 +23,9 @@ void main()
     );
 
     float kernel[9] = float[](
-        -1, -1, -1,
-        -1,  9, -1,
-        -1, -1, -1
+        1, 2, 1,
+        2, 4, 2,
+        1, 2, 1
     );
 
     vec3 pixels[9];
@@ -34,7 +34,7 @@ void main()
 
     vec3 color = vec3(0.0);
     for(int i = 0; i < 9; i++)
-        color += pixels[i] * kernel[i];
+        color += pixels[i] * (kernel[i] / 16.0);
 
     FragColor = vec4(color, 1.0);
 }
