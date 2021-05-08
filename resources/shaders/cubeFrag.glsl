@@ -1,15 +1,20 @@
 #version 400 core
 
 // Uniforms
-uniform sampler2D Texture;
+uniform vec3 cameraPos;
+uniform samplerCube Texture;
 
 // Inputs
+in vec3 normal;
 in vec2 textureCoords;
+in vec3 fragPos;
 
 // Output
 out vec4 fragColor;
 
 void main()
 {
-    fragColor = texture(Texture, textureCoords);
+    vec3 inputVec = fragPos - cameraPos;
+    vec3 reflected = reflect(inputVec, normalize(normal));
+    fragColor = texture(Texture, reflected);
 }
