@@ -294,13 +294,18 @@ int main()
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
 
-            // Skybox Vertices
+            // Skybox
             glBindVertexArray(VAO[SKYBOX]);
             glBindBuffer(GL_ARRAY_BUFFER, VBO[SKYBOX]);
             glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), skyboxVertices, GL_STATIC_DRAW);
 
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0));
             glEnableVertexAttribArray(0);
+
+            // Model
+            std::filesystem::path modelsDir{MODELS_DIR};
+            std::filesystem::path modelPath{modelsDir / "backpack.obj"};
+            LearnOpenGL::Model model{modelPath};
 
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
@@ -340,7 +345,7 @@ int main()
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
 
                 // Cubes
-                for(auto i = 0; i < 2; i++)
+                for(auto i = 0; i < 1; i++)
                 {
                     cubeShader.use();
                     auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
@@ -348,6 +353,11 @@ int main()
                     glBindVertexArray(VAO[CUBE]);
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
+
+                // Model
+                glm::mat4 modelMat = glm::translate(glm::mat4{1.0f}, cubePos[1]);
+                cubeShader.setMatrix("model", glm::value_ptr(modelMat));
+                model.Draw(cubeShader);
 
                 // Skybox
                 glm::mat4 model{1.0f};

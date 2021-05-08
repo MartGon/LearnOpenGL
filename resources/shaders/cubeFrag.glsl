@@ -14,7 +14,8 @@ out vec4 fragColor;
 
 void main()
 {
+    float ratio = 1.00 / 1.52; // Air / Glass
     vec3 inputVec = fragPos - cameraPos;
-    vec3 reflected = reflect(inputVec, normalize(normal));
-    fragColor = texture(Texture, reflected);
+    vec3 refracted = refract(inputVec, normalize(normal), ratio);
+    fragColor = texture(Texture, refracted);
 }
