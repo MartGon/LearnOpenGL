@@ -149,15 +149,11 @@ int main()
 
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-            // Models' vertices
-            float points[] = {
-                -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // top-left
-                0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // top-right
-                0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // bottom-right
-                -0.5f, -0.5f, 1.0f, 1.0f, 0.0f  // bottom-left
-            };   
-
-            // Positions
+            // Model
+            stbi_set_flip_vertically_on_load(true);
+            std::filesystem::path modelsDir{MODELS_DIR};
+            std::filesystem::path modelPath{modelsDir / "backpack.obj"};
+            LearnOpenGL::Model model{modelPath};
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
@@ -181,13 +177,16 @@ int main()
             // Cubes
             glBindVertexArray(VAO[POINTS]);
             glBindBuffer(GL_ARRAY_BUFFER, VBO[POINTS]);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+            //glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
 
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0));
             glEnableVertexAttribArray(0);
 
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
             glEnableVertexAttribArray(1);
+
+            // Camera pos
+            camera.Position = glm::vec3{0, 0, 3.f};
 
             // Game loop
             float delta = 0;
@@ -199,13 +198,31 @@ int main()
                     glfwSetWindowShouldClose(window, true);
 
                 // Clear
-                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                // Camera movement
+                float cameraSpeed = 2.5f * delta;
+                if(isKeyPressed(window, GLFW_KEY_W))
+                    camera.ProcessKeyboard(Camera_Movement::FORWARD, delta);
+                else if(isKeyPressed(window, GLFW_KEY_S))
+                    camera.ProcessKeyboard(Camera_Movement::BACKWARD, delta);
+
+                if(isKeyPressed(window, GLFW_KEY_A))
+                    camera.ProcessKeyboard(Camera_Movement::LEFT, delta);
+                else if(isKeyPressed(window, GLFW_KEY_D))
+                    camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
 
                 // Draw
                 cubeShader.use();
-                glBindVertexArray(VAO[POINTS]);
-                glDrawArrays(GL_POINTS, 0, 4);    
+                glm::mat4 modelMat{1.0f};
+                glm::mat4 view = camera.GetViewMatrix();
+                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);  
+                cubeShader.setMatrix("model", glm::value_ptr(modelMat));
+                cubeShader.setMatrix("view", glm::value_ptr(view));
+                cubeShader.setMatrix("projection", glm::value_ptr(projection));
+                cubeShader.setFloat("time", glfwGetTime());
+                model.Draw(cubeShader);
 
                 // Events
                 glfwPollEvents();
