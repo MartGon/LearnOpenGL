@@ -158,9 +158,12 @@ int main()
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
+            std::filesystem::path normalVertexPath = shaderFolder / "normalVertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
+            std::filesystem::path simpleFragPath = shaderFolder / "simpleFrag.glsl";
             std::filesystem::path geometryPath = shaderFolder / "geometry.glsl";
-            LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str(), geometryPath.generic_string().c_str() };
+            LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str()};
+            LearnOpenGL::Shader normalShader{normalVertexPath.generic_string().c_str(), simpleFragPath.generic_string().c_str(), geometryPath.generic_string().c_str() };
             cubeShader.use();
 
             enum ObjIndex
@@ -221,8 +224,12 @@ int main()
                 cubeShader.setMatrix("model", glm::value_ptr(modelMat));
                 cubeShader.setMatrix("view", glm::value_ptr(view));
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
-                cubeShader.setFloat("time", glfwGetTime());
                 model.Draw(cubeShader);
+                normalShader.use();
+                normalShader.setMatrix("model", glm::value_ptr(modelMat));
+                normalShader.setMatrix("view", glm::value_ptr(view));
+                normalShader.setMatrix("projection", glm::value_ptr(projection));
+                model.Draw(normalShader);
 
                 // Events
                 glfwPollEvents();

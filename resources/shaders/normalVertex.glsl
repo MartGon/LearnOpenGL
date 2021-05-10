@@ -12,7 +12,7 @@ out vec3 gNormal;
 
 void main()
 {
-    mat4 transform = projection * view * model;
+    mat4 transform = view * model;
     gl_Position = transform * vec4(aPos, 1.0f);
 
     gTexCoords = aTexCoords;
