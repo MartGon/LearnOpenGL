@@ -150,71 +150,26 @@ int main()
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
             // Models' vertices
-            float vertices[] = {
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-                -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 
-
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
-            };
-
+            float points[] = {
+                -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // top-left
+                0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // top-right
+                0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // bottom-right
+                -0.5f, -0.5f, 1.0f, 1.0f, 0.0f  // bottom-left
+            };   
 
             // Positions
-            glm::vec3 cubePos[] = {
-                glm::vec3(1.5f, 0.0f, 0.0f),
-                glm::vec3(-1.5f, 0.0f, -1.0f)
-            };
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
-            LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
-            LearnOpenGL::Shader greenShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
-            LearnOpenGL::Shader redShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
-            LearnOpenGL::Shader blueShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
+            std::filesystem::path geometryPath = shaderFolder / "geometry.glsl";
+            LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str(), geometryPath.generic_string().c_str() };
             cubeShader.use();
 
             enum ObjIndex
             {
-                CUBE,
-                UNIFORM
+                POINTS
             };
 
             // Arrays and Buffers
@@ -224,29 +179,15 @@ int main()
             glGenBuffers(5, VBO);
 
             // Cubes
-            glBindVertexArray(VAO[CUBE]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[CUBE]);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+            glBindVertexArray(VAO[POINTS]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[POINTS]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0));
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0));
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
             glEnableVertexAttribArray(1);
-            
-            // Uniform
-            glBindBuffer(GL_UNIFORM_BUFFER, VAO[UNIFORM]);
-            glBufferData(GL_UNIFORM_BUFFER, 2* sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
-            glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-            glBindBufferBase(GL_UNIFORM_BUFFER, 0, VAO[UNIFORM]);
-
-            auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);   
-            glBindBuffer(GL_UNIFORM_BUFFER, VAO[UNIFORM]);
-            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
-            glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-            // Set camera pos
-            camera.Position = glm::vec3{0, 0, 3.f};
 
             // Game loop
             float delta = 0;
@@ -258,51 +199,15 @@ int main()
                     glfwSetWindowShouldClose(window, true);
 
                 // Clear
-                glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+                glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                // Camera movement
-                float cameraSpeed = 2.5f * delta;
-                if(isKeyPressed(window, GLFW_KEY_W))
-                    camera.ProcessKeyboard(Camera_Movement::FORWARD, delta);
-                else if(isKeyPressed(window, GLFW_KEY_S))
-                    camera.ProcessKeyboard(Camera_Movement::BACKWARD, delta);
+                // Draw
+                cubeShader.use();
+                glBindVertexArray(VAO[POINTS]);
+                glDrawArrays(GL_POINTS, 0, 4);    
 
-                if(isKeyPressed(window, GLFW_KEY_A))
-                    camera.ProcessKeyboard(Camera_Movement::LEFT, delta);
-                else if(isKeyPressed(window, GLFW_KEY_D))
-                    camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
-
-                // Transformations
-                auto view = camera.GetViewMatrix();      
-                glBindBuffer(GL_UNIFORM_BUFFER, VAO[UNIFORM]);
-                glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
-                glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-                // Cubes
-                for(auto i = 0; i < 2; i++)
-                {
-                    cubeShader.use();
-                    auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
-                    auto color = glm::vec4(1.0f, 1.0f, i, 1.0f);
-                    cubeShader.setMatrix("model", glm::value_ptr(model));
-                    cubeShader.setVec3("color", glm::value_ptr(color));
-                    glBindVertexArray(VAO[CUBE]);
-                    glDrawArrays(GL_TRIANGLES, 0, 36);
-                }
-
-                for(auto i = 0; i < 2; i++)
-                {
-                    greenShader.use();
-                    auto model = glm::translate(glm::mat4{1.0f}, cubePos[i]);
-                    model = glm::translate(model, cubePos[i]);
-                    auto color = glm::vec4(i, 1.0f, i, 1.0f);
-                    greenShader.setMatrix("model", glm::value_ptr(model));
-                    greenShader.setVec3("color", glm::value_ptr(color));
-                    glBindVertexArray(VAO[CUBE]);
-                    glDrawArrays(GL_TRIANGLES, 0, 36);
-                }
-                
+                // Events
                 glfwPollEvents();
                 
                 // Swap buffers

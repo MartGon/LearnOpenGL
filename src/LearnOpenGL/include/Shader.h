@@ -18,13 +18,15 @@ namespace LearnOpenGL
         unsigned int ID;
         // constructor generates the shader on the fly
         // ------------------------------------------------------------------------
-        Shader(const char* vertexPath, const char* fragmentPath)
+        Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath = nullptr)
         {
             // 1. retrieve the vertex/fragment source code from filePath
             std::string vertexCode;
             std::string fragmentCode;
+            std::string geometryCode;
             std::ifstream vShaderFile;
             std::ifstream fShaderFile;
+            std::ifstream gShaderFile;
             // ensure ifstream objects can throw exceptions:
             vShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
             fShaderFile.exceptions (std::ifstream::failbit | std::ifstream::badbit);
@@ -33,16 +35,24 @@ namespace LearnOpenGL
                 // open files
                 vShaderFile.open(vertexPath);
                 fShaderFile.open(fragmentPath);
-                std::stringstream vShaderStream, fShaderStream;
+                if(geometryPath)
+                    gShaderFile.open(geometryPath);
+                std::stringstream vShaderStream, fShaderStream, gShaderStream;
                 // read file's buffer contents into streams
                 vShaderStream << vShaderFile.rdbuf();
                 fShaderStream << fShaderFile.rdbuf();
+                if(geometryPath)
+                    gShaderStream << gShaderFile.rdbuf();
                 // close file handlers
                 vShaderFile.close();
                 fShaderFile.close();
+                if(geometryPath)
+                    gShaderFile.close();
                 // convert stream into string
                 vertexCode   = vShaderStream.str();
                 fragmentCode = fShaderStream.str();
+                if(geometryPath)
+                    geometryCode = gShaderStream.str();
             }
             catch (std::ifstream::failure& e)
             {
@@ -51,7 +61,7 @@ namespace LearnOpenGL
             const char* vShaderCode = vertexCode.c_str();
             const char * fShaderCode = fragmentCode.c_str();
             // 2. compile shaders
-            unsigned int vertex, fragment;
+            unsigned int vertex, fragment, geometry;
             // vertex shader
             vertex = glCreateShader(GL_VERTEX_SHADER);
             glShaderSource(vertex, 1, &vShaderCode, NULL);
@@ -62,15 +72,28 @@ namespace LearnOpenGL
             glShaderSource(fragment, 1, &fShaderCode, NULL);
             glCompileShader(fragment);
             checkCompileErrors(fragment, "FRAGMENT");
+            // Geomtery
+            if(geometryPath)
+            {
+                geometry = glCreateShader(GL_GEOMETRY_SHADER);
+                const char* gShaderCode = geometryCode.c_str();
+                glShaderSource(geometry, 1, &gShaderCode, NULL);
+                glCompileShader(geometry);
+                checkCompileErrors(geometry, "GEOMETRY");
+            }
             // shader Program
             ID = glCreateProgram();
             glAttachShader(ID, vertex);
             glAttachShader(ID, fragment);
+            if(geometryPath)
+                glAttachShader(ID, geometry);
             glLinkProgram(ID);
             checkCompileErrors(ID, "PROGRAM");
             // delete the shaders as they're linked into our program now and no longer necessary
             glDeleteShader(vertex);
             glDeleteShader(fragment);
+            if(geometryPath)
+                glDeleteShader(geometry);
         }
         // activate the shader
         // ------------------------------------------------------------------------
