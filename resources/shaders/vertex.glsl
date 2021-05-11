@@ -7,6 +7,7 @@ out vec3 color;
 
 void main()
 {
-    gl_Position = vec4(vPos + offset, 0.0, 1.0);
+    float factor = gl_InstanceID / 100.0f;
+    gl_Position = vec4(factor * vPos + offset, 0.0, 1.0);
     color = vColor;
 }
