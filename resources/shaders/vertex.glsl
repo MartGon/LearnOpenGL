@@ -1,13 +1,19 @@
 #version 420 core
-layout (location = 0) in vec2 vPos;
-layout (location = 1) in vec3 vColor;
-layout (location = 2) in vec2 offset;
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNormal;
+layout (location = 2) in vec2 aTexCoords;
+layout (location = 3) in mat4 iTransform;
 
-out vec3 color;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+out vec2 gTexCoords;
 
 void main()
 {
-    float factor = gl_InstanceID / 100.0f;
-    gl_Position = vec4(factor * vPos + offset, 0.0, 1.0);
-    color = vColor;
+    mat4 transform = projection * view * model;
+    gl_Position = transform * vec4(aPos, 1.0f);
+
+    gTexCoords = aTexCoords;
 }
