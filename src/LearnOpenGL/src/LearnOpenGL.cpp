@@ -149,26 +149,31 @@ int main()
 
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
+            // Vertices
+            float quadVertices[] = {
+                // positions     // colors
+                -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
+                0.05f, -0.05f,  0.0f, 1.0f, 0.0f,
+                -0.05f, -0.05f,  0.0f, 0.0f, 1.0f,
+
+                -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
+                0.05f, -0.05f,  0.0f, 1.0f, 0.0f,   
+                0.05f,  0.05f,  0.0f, 1.0f, 1.0f		    		
+            }; 
+
             // Model
             stbi_set_flip_vertically_on_load(true);
-            std::filesystem::path modelsDir{MODELS_DIR};
-            std::filesystem::path modelPath{modelsDir / "backpack.obj"};
-            LearnOpenGL::Model model{modelPath};
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
-            std::filesystem::path normalVertexPath = shaderFolder / "normalVertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
-            std::filesystem::path simpleFragPath = shaderFolder / "simpleFrag.glsl";
-            std::filesystem::path geometryPath = shaderFolder / "geometry.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str()};
-            LearnOpenGL::Shader normalShader{normalVertexPath.generic_string().c_str(), simpleFragPath.generic_string().c_str(), geometryPath.generic_string().c_str() };
             cubeShader.use();
 
             enum ObjIndex
             {
-                POINTS
+                QUAD
             };
 
             // Arrays and Buffers
@@ -178,9 +183,9 @@ int main()
             glGenBuffers(5, VBO);
 
             // Cubes
-            glBindVertexArray(VAO[POINTS]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[POINTS]);
-            //glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+            glBindVertexArray(VAO[QUAD]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
 
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(0));
             glEnableVertexAttribArray(0);
@@ -190,6 +195,28 @@ int main()
 
             // Camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
+
+            // Translations
+            glm::vec2 offsets[100];
+            const float separation = 0.1;
+            int index = 0;
+            for(int y = -5; y < 5; y++)
+            {
+                for(int x = -5; x < 5; x++)
+                {
+                    glm::vec2 offset{0.0f};
+                    offset.x = (2*x) / 10.0f + separation;
+                    offset.y = (2*y) / 10.0f + separation;
+                    offsets[index++] = offset;
+                }
+            }
+
+            // Set translations
+            cubeShader.use();
+            for(int i = 0; i < 100; i++)
+            {
+                cubeShader.setVec2("offsets[" + std::to_string(i) + "]", glm::value_ptr(offsets[i]));
+            }
 
             // Game loop
             float delta = 0;
@@ -218,18 +245,7 @@ int main()
 
                 // Draw
                 cubeShader.use();
-                glm::mat4 modelMat{1.0f};
-                glm::mat4 view = camera.GetViewMatrix();
-                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);  
-                cubeShader.setMatrix("model", glm::value_ptr(modelMat));
-                cubeShader.setMatrix("view", glm::value_ptr(view));
-                cubeShader.setMatrix("projection", glm::value_ptr(projection));
-                model.Draw(cubeShader);
-                normalShader.use();
-                normalShader.setMatrix("model", glm::value_ptr(modelMat));
-                normalShader.setMatrix("view", glm::value_ptr(view));
-                normalShader.setMatrix("projection", glm::value_ptr(projection));
-                model.Draw(normalShader);
+                glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 100);
 
                 // Events
                 glfwPollEvents();
