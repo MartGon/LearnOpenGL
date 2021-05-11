@@ -171,9 +171,25 @@ int main()
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str()};
             cubeShader.use();
 
+            // Translations
+            glm::vec2 offsets[100];
+            const float separation = 0.1;
+            int index = 0;
+            for(int y = -5; y < 5; y++)
+            {
+                for(int x = -5; x < 5; x++)
+                {
+                    glm::vec2 offset{0.0f};
+                    offset.x = (2*x) / 10.0f + separation;
+                    offset.y = (2*y) / 10.0f + separation;
+                    offsets[index++] = offset;
+                }
+            }
+
             enum ObjIndex
             {
-                QUAD
+                QUAD,
+                TRANSLATIONS
             };
 
             // Arrays and Buffers
@@ -193,30 +209,17 @@ int main()
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
             glEnableVertexAttribArray(1);
 
+            // Translations
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[TRANSLATIONS]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 100, offsets, GL_STATIC_DRAW);
+
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)(0 * sizeof(float)));
+            glEnableVertexAttribArray(2);
+            glVertexAttribDivisor(2, 1);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+
             // Camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
-
-            // Translations
-            glm::vec2 offsets[100];
-            const float separation = 0.1;
-            int index = 0;
-            for(int y = -5; y < 5; y++)
-            {
-                for(int x = -5; x < 5; x++)
-                {
-                    glm::vec2 offset{0.0f};
-                    offset.x = (2*x) / 10.0f + separation;
-                    offset.y = (2*y) / 10.0f + separation;
-                    offsets[index++] = offset;
-                }
-            }
-
-            // Set translations
-            cubeShader.use();
-            for(int i = 0; i < 100; i++)
-            {
-                cubeShader.setVec2("offsets[" + std::to_string(i) + "]", glm::value_ptr(offsets[i]));
-            }
 
             // Game loop
             float delta = 0;
