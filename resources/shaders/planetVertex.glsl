@@ -12,7 +12,7 @@ out vec2 gTexCoords;
 
 void main()
 {
-    mat4 transform = projection * view * iTransform;
+    mat4 transform = projection * view * model;
     gl_Position = transform * vec4(aPos, 1.0f);
 
     gTexCoords = aTexCoords;

@@ -162,20 +162,22 @@ int main()
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
+            std::filesystem::path planetVertexPath = shaderFolder / "planetVertex.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str()};
+            LearnOpenGL::Shader planetShader{planetVertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str()};
             cubeShader.use();
 
             // Transformations
             std::random_device dev;
             std::mt19937 rng(dev());
             std::uniform_real_distribution<float> scaleDist(0.05, 0.25f);
-            std::uniform_real_distribution<float> heightDist(0, 3.f);
-            std::uniform_real_distribution<float> factorDist(0.75f, 1.25f);
+            std::uniform_real_distribution<float> heightDist(0, 6.f);
+            std::uniform_real_distribution<float> factorDist(0.15f, 1.0f);
             std::uniform_real_distribution<float> angleDist(0, 2 * glm::two_pi<float>());
 
-            constexpr int amount = 50000;
+            constexpr int amount = 100000;
             glm::mat4 transformations[amount];
-            const float radius = 50.0f;
+            const float radius = 150.0f;
             for(int i = 0; i < amount; i++)
             {
                 // Random offset
@@ -189,8 +191,8 @@ int main()
                 transform = glm::rotate(transform, angle, glm::vec3(0, 1.0f, 0.0f));
                 transform = glm::translate(transform, r);
                 transform = glm::translate(transform, glm::vec3(0.0, height, 0.0f));
-                transform = glm::scale(transform, glm::vec3{scale});
                 transform = glm::rotate(transform, angleDist(rng), glm::vec3(0.4f, 0.6f, 0.8f));
+                transform = glm::scale(transform, glm::vec3{scale});
                 transformations[i] = transform;
             }
 
@@ -206,29 +208,31 @@ int main()
             unsigned int VBO[5];
             glGenBuffers(5, VBO);
 
-            // Cubes
-            glBindVertexArray(VAO[QUAD]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD]);
-            //glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
-
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(0));
-            glEnableVertexAttribArray(0);
-
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(3 * sizeof(float)));
-            glEnableVertexAttribArray(1);
-
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(float), (void*)(6 * sizeof(float)));
-            glEnableVertexAttribArray(2);
-
             // Translations
             glBindBuffer(GL_ARRAY_BUFFER, VBO[TRANSLATIONS]);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * amount, transformations, GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * amount, &transformations[0], GL_STATIC_DRAW);
+            //glBindBuffer(GL_ARRAY_BUFFER, 0);
+            
+            for(unsigned int i = 0; i < asteroid.meshes.size(); i++)
+            {
+                glBindVertexArray(asteroid.meshes[i].VAO);
 
-            glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(0 * sizeof(float)));
-            glEnableVertexAttribArray(3);
-            glVertexAttribDivisor(3, 1);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
+                glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(0 * sizeof(glm::vec4)));
+                glEnableVertexAttribArray(3);
+                glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(1 * sizeof(glm::vec4)));
+                glEnableVertexAttribArray(4);
+                glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+                glEnableVertexAttribArray(5);
+                glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+                glEnableVertexAttribArray(6);
 
+                glVertexAttribDivisor(3, 1);
+                glVertexAttribDivisor(4, 1);
+                glVertexAttribDivisor(5, 1);
+                glVertexAttribDivisor(6, 1);
+
+                glBindVertexArray(0);
+            }
             // Camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
 
@@ -258,26 +262,37 @@ int main()
                     camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
 
                 // Set uniforms
+                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 1000.f);
                 glm::mat4 view = camera.GetViewMatrix();
-                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
+                cubeShader.use();
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
                 cubeShader.setMatrix("view", glm::value_ptr(view));
+
+                planetShader.use();
+                planetShader.setMatrix("projection", glm::value_ptr(projection));
+                planetShader.setMatrix("view", glm::value_ptr(view));
                 
                 // Draw planet
-                cubeShader.use();
                 glm::mat4 model = glm::mat4(1.0f);
                 model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
                 model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
-                cubeShader.setMatrix("model", glm::value_ptr(model));
-                planet.Draw(cubeShader);
+                planetShader.use();
+                planetShader.setMatrix("model", glm::value_ptr(model));
+                planet.Draw(planetShader);
 
                 // Draw Asteroids
-                for(int i = 0; i < amount; i ++)
+                cubeShader.use();
+                cubeShader.setInt("texture_diffuse1", 0);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, asteroid.textures_loaded[0].id);
+                for(unsigned int i = 0; i < asteroid.meshes.size(); i++)
                 {
-                    cubeShader.use();
-                    cubeShader.setMatrix("model", glm::value_ptr(transformations[i]));
-                    asteroid.Draw(cubeShader);
+                    glBindVertexArray(asteroid.meshes[i].VAO);
+                    glDrawElementsInstanced(GL_TRIANGLES, asteroid.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, amount);
+                    glBindVertexArray(0);
                 }
+                
+
 
                 // Events
                 glfwPollEvents();
@@ -286,6 +301,7 @@ int main()
                 glfwSwapBuffers(window);
 
                 delta = glfwGetTime() - now;
+                //std::cout << "FPS: " << 1/delta << "\n";
             }
         }
     }
