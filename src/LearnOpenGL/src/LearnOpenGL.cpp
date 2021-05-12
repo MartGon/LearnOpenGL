@@ -125,6 +125,7 @@ int main()
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_SAMPLES, 16);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     auto window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Window", NULL, NULL);
@@ -145,61 +146,69 @@ int main()
 
         if(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {            
+            //glEnable(GL_MULTISAMPLE);
+
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LEQUAL);
 
             glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-            // Model
-            stbi_set_flip_vertically_on_load(true);
-            std::filesystem::path modelsDir{MODELS_DIR};
-            std::filesystem::path planetPath{modelsDir / "planet.obj"};
-            std::filesystem::path asteroidPath{modelsDir / "rock.obj"};
-            LearnOpenGL::Model planet{planetPath};
-            LearnOpenGL::Model asteroid{asteroidPath};
+            // Cube vertices
+            float cubeVertices[] = {
+                // positions       
+                -0.5f, -0.5f, -0.5f,
+                0.5f, -0.5f, -0.5f,
+                0.5f,  0.5f, -0.5f,
+                0.5f,  0.5f, -0.5f,
+                -0.5f,  0.5f, -0.5f,
+                -0.5f, -0.5f, -0.5f,
+
+                -0.5f, -0.5f,  0.5f,
+                0.5f, -0.5f,  0.5f,
+                0.5f,  0.5f,  0.5f,
+                0.5f,  0.5f,  0.5f,
+                -0.5f,  0.5f,  0.5f,
+                -0.5f, -0.5f,  0.5f,
+
+                -0.5f,  0.5f,  0.5f,
+                -0.5f,  0.5f, -0.5f,
+                -0.5f, -0.5f, -0.5f,
+                -0.5f, -0.5f, -0.5f,
+                -0.5f, -0.5f,  0.5f,
+                -0.5f,  0.5f,  0.5f,
+
+                0.5f,  0.5f,  0.5f,
+                0.5f,  0.5f, -0.5f,
+                0.5f, -0.5f, -0.5f,
+                0.5f, -0.5f, -0.5f,
+                0.5f, -0.5f,  0.5f,
+                0.5f,  0.5f,  0.5f,
+
+                -0.5f, -0.5f, -0.5f,
+                0.5f, -0.5f, -0.5f,
+                0.5f, -0.5f,  0.5f,
+                0.5f, -0.5f,  0.5f,
+                -0.5f, -0.5f,  0.5f,
+                -0.5f, -0.5f, -0.5f,
+
+                -0.5f,  0.5f, -0.5f,
+                0.5f,  0.5f, -0.5f,
+                0.5f,  0.5f,  0.5f,
+                0.5f,  0.5f,  0.5f,
+                -0.5f,  0.5f,  0.5f,
+                -0.5f,  0.5f, -0.5f
+            };
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
-            std::filesystem::path planetVertexPath = shaderFolder / "planetVertex.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str()};
-            LearnOpenGL::Shader planetShader{planetVertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str()};
             cubeShader.use();
-
-            // Transformations
-            std::random_device dev;
-            std::mt19937 rng(dev());
-            std::uniform_real_distribution<float> scaleDist(0.05, 0.25f);
-            std::uniform_real_distribution<float> heightDist(0, 6.f);
-            std::uniform_real_distribution<float> factorDist(0.15f, 1.0f);
-            std::uniform_real_distribution<float> angleDist(0, 2 * glm::two_pi<float>());
-
-            constexpr int amount = 100000;
-            glm::mat4 transformations[amount];
-            const float radius = 150.0f;
-            for(int i = 0; i < amount; i++)
-            {
-                // Random offset
-                auto scale = scaleDist(rng);
-                auto factor = factorDist(rng);
-                auto height = heightDist(rng);
-                auto angle = angleDist(rng);
-
-                glm::vec3 r = glm::vec3{1.0f, 0.0f, 0.0f}  * radius * factor;
-                glm::mat4 transform{1.0f};
-                transform = glm::rotate(transform, angle, glm::vec3(0, 1.0f, 0.0f));
-                transform = glm::translate(transform, r);
-                transform = glm::translate(transform, glm::vec3(0.0, height, 0.0f));
-                transform = glm::rotate(transform, angleDist(rng), glm::vec3(0.4f, 0.6f, 0.8f));
-                transform = glm::scale(transform, glm::vec3{scale});
-                transformations[i] = transform;
-            }
 
             enum ObjIndex
             {
-                QUAD,
-                TRANSLATIONS
+                CUBE,
             };
 
             // Arrays and Buffers
@@ -208,31 +217,14 @@ int main()
             unsigned int VBO[5];
             glGenBuffers(5, VBO);
 
-            // Translations
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[TRANSLATIONS]);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * amount, &transformations[0], GL_STATIC_DRAW);
-            //glBindBuffer(GL_ARRAY_BUFFER, 0);
-            
-            for(unsigned int i = 0; i < asteroid.meshes.size(); i++)
-            {
-                glBindVertexArray(asteroid.meshes[i].VAO);
+            // Cube
+            glBindVertexArray(VAO[CUBE]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[CUBE]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
 
-                glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(0 * sizeof(glm::vec4)));
-                glEnableVertexAttribArray(3);
-                glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(1 * sizeof(glm::vec4)));
-                glEnableVertexAttribArray(4);
-                glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-                glEnableVertexAttribArray(5);
-                glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-                glEnableVertexAttribArray(6);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 3, 0);
+            glEnableVertexAttribArray(0);
 
-                glVertexAttribDivisor(3, 1);
-                glVertexAttribDivisor(4, 1);
-                glVertexAttribDivisor(5, 1);
-                glVertexAttribDivisor(6, 1);
-
-                glBindVertexArray(0);
-            }
             // Camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
 
@@ -264,35 +256,19 @@ int main()
                 // Set uniforms
                 auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 1000.f);
                 glm::mat4 view = camera.GetViewMatrix();
+                glm::mat4 model{1.0f};
+                glm::vec3 color = glm::vec3{1.0f} * (float)((sin(glfwGetTime()) + 1) / 2);
+                color = glm::vec3{0.0f, 1.0f, 0.0f};
                 cubeShader.use();
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
                 cubeShader.setMatrix("view", glm::value_ptr(view));
+                cubeShader.setMatrix("model", glm::value_ptr(model));
+                cubeShader.setVec3("color", glm::value_ptr(color));
 
-                planetShader.use();
-                planetShader.setMatrix("projection", glm::value_ptr(projection));
-                planetShader.setMatrix("view", glm::value_ptr(view));
-                
-                // Draw planet
-                glm::mat4 model = glm::mat4(1.0f);
-                model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
-                model = glm::scale(model, glm::vec3(4.0f, 4.0f, 4.0f));
-                planetShader.use();
-                planetShader.setMatrix("model", glm::value_ptr(model));
-                planet.Draw(planetShader);
-
-                // Draw Asteroids
+                // Draw Cube
                 cubeShader.use();
-                cubeShader.setInt("texture_diffuse1", 0);
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, asteroid.textures_loaded[0].id);
-                for(unsigned int i = 0; i < asteroid.meshes.size(); i++)
-                {
-                    glBindVertexArray(asteroid.meshes[i].VAO);
-                    glDrawElementsInstanced(GL_TRIANGLES, asteroid.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, amount);
-                    glBindVertexArray(0);
-                }
-                
-
+                glBindVertexArray(VAO[CUBE]);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
 
                 // Events
                 glfwPollEvents();
