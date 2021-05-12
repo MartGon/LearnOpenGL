@@ -125,7 +125,6 @@ int main()
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_SAMPLES, 16);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     auto window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Window", NULL, NULL);
@@ -146,7 +145,7 @@ int main()
 
         if(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
         {            
-            //glEnable(GL_MULTISAMPLE);
+            glEnable(GL_MULTISAMPLE);
 
             glEnable(GL_DEPTH_TEST);
             glDepthFunc(GL_LEQUAL);
@@ -198,17 +197,31 @@ int main()
                 -0.5f,  0.5f,  0.5f,
                 -0.5f,  0.5f, -0.5f
             };
+            float quadVertices[] = {   // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+                // positions   // texCoords
+                -1.0f,  1.0f,  0.0f, 1.0f,
+                -1.0f, -1.0f,  0.0f, 0.0f,
+                1.0f, -1.0f,  1.0f, 0.0f,
+
+                -1.0f,  1.0f,  0.0f, 1.0f,
+                1.0f, -1.0f,  1.0f, 0.0f,
+                1.0f,  1.0f,  1.0f, 1.0f
+            };
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
+            std::filesystem::path quadVertexPath = shaderFolder / "quadVertex.glsl";
+            std::filesystem::path quadFragPath = shaderFolder / "quadFrag.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str()};
+            LearnOpenGL::Shader quadShader{quadVertexPath.generic_string().c_str(), quadFragPath.generic_string().c_str()};
             cubeShader.use();
 
             enum ObjIndex
             {
                 CUBE,
+                QUAD,
             };
 
             // Arrays and Buffers
@@ -225,6 +238,66 @@ int main()
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 3, 0);
             glEnableVertexAttribArray(0);
 
+            // Quad
+            glBindVertexArray(VAO[QUAD]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 4, 0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 4, (void*)(sizeof(GL_FLOAT) * 2));
+            glEnableVertexAttribArray(0);
+            glEnableVertexAttribArray(1);
+
+            glBindVertexArray(0);
+
+            // Framebuffers
+            unsigned int framebuffer;
+            glGenFramebuffers(1, &framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+            // Generate target texture
+            unsigned int targetTextureMS;
+            glGenTextures(1, &targetTextureMS);
+            glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, targetTextureMS);
+            glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, GL_TRUE);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, targetTextureMS, 0);
+
+            // Create stencil/depth renderbuffers
+            unsigned int rbo;
+            glGenRenderbuffers(1, &rbo);
+            glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, WINDOW_WIDTH, WINDOW_HEIGHT);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            // Intermidiate framebuffer
+            unsigned int intermediateFBO;
+            glGenFramebuffers(1, &intermediateFBO);
+            glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+
+            unsigned int targetTexture;
+            glGenTextures(1, &targetTexture);
+            glBindTexture(GL_TEXTURE_2D, targetTexture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WINDOW_WIDTH, WINDOW_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, targetTexture, 0);
+
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+                std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            // Uniforms
+            quadShader.use();
+            quadShader.setInt("screenTexture", 0);
+
             // Camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
 
@@ -238,6 +311,7 @@ int main()
                     glfwSetWindowShouldClose(window, true);
 
                 // Clear
+                glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -269,6 +343,19 @@ int main()
                 cubeShader.use();
                 glBindVertexArray(VAO[CUBE]);
                 glDrawArrays(GL_TRIANGLES, 0, 36);
+
+                // Blit MS texture to intermediate
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer);
+                glBindFramebuffer(GL_DRAW_FRAMEBUFFER, intermediateFBO);
+                glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+                // Draw quad
+                quadShader.use();
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glBindVertexArray(VAO[QUAD]);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, targetTexture);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
 
                 // Events
                 glfwPollEvents();
