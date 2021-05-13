@@ -107,7 +107,8 @@ void main()
     if(flashlightOn)
         color += CalcSpotLight(spotLight, normal);
 
-
+    float gamma = 2.2;
+    color = pow(color, vec3(1/gamma));
     fragColor = vec4(color, 1.0f);
 }
 

@@ -16,7 +16,7 @@
 #include <Shader.h>
 #include <Camera.h>
 
-unsigned int GenTexture(std::filesystem::path path, int textureUnit = GL_TEXTURE0, int format = GL_RGB)
+unsigned int GenTexture(std::filesystem::path path, int textureUnit = GL_TEXTURE0, int format = GL_RGB, int glFormat = GL_RGB)
 {
     unsigned int texture;
     glGenTextures(1, &texture);
@@ -27,7 +27,7 @@ unsigned int GenTexture(std::filesystem::path path, int textureUnit = GL_TEXTURE
     auto data = stbi_load(path.string().c_str(), &width, &height, &nrChannels, 0);
     if(data)
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, glFormat, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
@@ -241,13 +241,13 @@ int main()
             // Textures
             std::filesystem::path texturesDir{TEXTURES_DIR};
             std::filesystem::path texturePath = texturesDir / "container2.png";
-            auto texture = GenTexture(texturePath, GL_TEXTURE0, GL_RGBA);
+            auto texture = GenTexture(texturePath, GL_TEXTURE0, GL_RGBA, GL_SRGB_ALPHA);
 
             std::filesystem::path specularPath = texturesDir / "container2_specular.png";
             auto specularMap = GenTexture(specularPath, GL_TEXTURE1, GL_RGBA);
 
             std::filesystem::path woodPath = texturesDir / "wood.png";
-            auto wood = GenTexture(woodPath, GL_TEXTURE0, GL_RGBA);
+            auto wood = GenTexture(woodPath, GL_TEXTURE0, GL_RGBA, GL_SRGB_ALPHA);
 
             // Set material properties
             cubeShader.use();
