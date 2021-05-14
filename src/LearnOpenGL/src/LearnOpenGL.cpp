@@ -154,24 +154,17 @@ int main()
                 -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
             };         
             glm::vec3 cubePos[] = {
-                glm::vec3( 0.0f,  0.0f,  0.0f), 
-                glm::vec3( 2.0f,  5.0f, -15.0f), 
-                glm::vec3(-1.5f, -2.2f, -2.5f),  
-                glm::vec3(-3.8f, -2.0f, -12.3f),  
-                glm::vec3( 2.4f, -0.4f, -3.5f),  
-                glm::vec3(-1.7f,  3.0f, -7.5f),  
-                glm::vec3( 1.3f, -2.0f, -2.5f),  
-                glm::vec3( 1.5f,  2.0f, -2.5f), 
-                glm::vec3( 1.5f,  0.2f, -1.5f), 
-                glm::vec3(-1.3f,  1.0f, -1.5f)  
+                glm::vec3(0.0f, 1.5f, 0.0),
+                glm::vec3(2.0f, 0.0f, 1.0),
+                glm::vec3(-1.0f, 0.0f, 2.0)
             };
             glm::vec3 pointLightPositions[] = {
-                glm::vec3( 0.7f,  0.2f,  2.0f),
+                glm::vec3( 0.7f,  1.5f,  2.0f),
                 glm::vec3( 2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f,  2.0f, -12.0f),
                 glm::vec3( 0.0f,  0.0f, -3.0f)
             };
-            float quadVertices[] = 
+            float planeVertices[] = 
             {
                 -0.5f,  0.0f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
                 0.5f,  0.0f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
@@ -180,28 +173,69 @@ int main()
                 -0.5f,  0.0f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
                 -0.5f,  0.0f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
             };
+            float quadVertices[] = 
+            {
+                -1.0f, -1.0f,   0.0f, 0.0f,
+                1.0f, -1.0f,    1.0f, 0.0f,
+                1.0f, 1.0f,     1.0f, 1.0f,
+                1.0f, 1.0f,     1.0f, 1.0f,
+                -1.0f, 1.0f,    0.0f, 1.0f,
+                -1.0f, -1.0f,   0.0f, 0.0f,
+
+            };
+
+            // Shadow maps - Framebuffer
+            unsigned int depthMapFBO;
+            glGenFramebuffers(1, &depthMapFBO);
+            const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+
+            // Shadow map - Depth Map
+            unsigned int depthMap;
+            glGenTextures(1, &depthMap);
+            glBindTexture(GL_TEXTURE_2D, depthMap);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            // Shadow maps - Framebuffer attachments
+            glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+            glDrawBuffer(GL_NONE);
+            glReadBuffer(GL_NONE);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
             std::filesystem::path lightFragPath = shaderFolder / "lightFrag.glsl";
+            std::filesystem::path shadowVertexPath = shaderFolder / "shadowVertex.glsl";
+            std::filesystem::path shadowFragPath = shaderFolder / "shadowFrag.glsl";
+            std::filesystem::path quadVertexPath = shaderFolder / "quadVertex.glsl";
+            std::filesystem::path quadFragPath = shaderFolder / "quadFrag.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
             LearnOpenGL::Shader lightShader{vertexPath.generic_string().c_str(), lightFragPath.generic_string().c_str() };
+            LearnOpenGL::Shader shadowShader{shadowVertexPath.generic_string().c_str(), shadowFragPath.generic_string().c_str() };
+            LearnOpenGL::Shader quadShader{quadVertexPath.generic_string().c_str(), quadFragPath.generic_string().c_str() };
             cubeShader.use();
 
             enum ObjIndex
             {
                 CUBE,
                 LIGHT,
+                PLANE,
                 QUAD
             };
 
             // Arrays and Buffers
-            unsigned int VAO[3];
-            glGenVertexArrays(3, VAO);
-            unsigned int VBO[3];
-            glGenBuffers(3, VBO);
+            unsigned int VAO[4];
+            glGenVertexArrays(4, VAO);
+            unsigned int VBO[4];
+            glGenBuffers(4, VBO);
 
             // Cube
             glBindVertexArray(VAO[CUBE]);
@@ -217,10 +251,10 @@ int main()
             glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
             glEnableVertexAttribArray(2);
 
-            // Quad
-            glBindVertexArray(VAO[QUAD]);
-            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD]);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+            // Plane
+            glBindVertexArray(VAO[PLANE]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[PLANE]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
 
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
@@ -237,6 +271,17 @@ int main()
             
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
+
+            // Screen quad
+            glBindVertexArray(VAO[QUAD]);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO[QUAD]);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+            
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(0 * sizeof(float)));
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+
 
             // Textures
             std::filesystem::path texturesDir{TEXTURES_DIR};
@@ -308,6 +353,14 @@ int main()
 
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
+
+            // Shadow Maps - Ortographic view
+            float zNear = 1.0, zFar =7.5f;
+            glm::mat4 ortho = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
+            glm::mat4 lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::mat4 lightSpaceMat = ortho * lightView;
+            shadowShader.use();
+            shadowShader.setMatrix("lightSpaceMatrix", glm::value_ptr(lightSpaceMat));
             
             // Light flags
             bool lightsOn[] = {false, false, false, false};
@@ -324,9 +377,53 @@ int main()
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
 
+                // Draw Shadows - BEGIN
+                glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+                glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+                glClear(GL_DEPTH_BUFFER_BIT);
+                
+                // Draw Cubes
+                for(unsigned int i = 0; i < 3; i++)
+                {
+                    glm::mat4 model = glm::mat4(1.0f);
+                    model = glm::translate(model, cubePos[i]);
+                    model = glm::scale(model, glm::vec3(0.5f));
+                    shadowShader.use();
+                    shadowShader.setMatrix("model", glm::value_ptr(model));
+
+                    // Draw
+                    // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+                    glBindVertexArray(VAO[CUBE]);
+                    glDrawArrays(GL_TRIANGLES, 0, 36);
+                }
+
+                // Draw Floor
+                glm::mat4 floorModel{1.0f};
+                floorModel = glm::translate(floorModel, glm::vec3(0.0f, -1.0f, 0.0f));
+                floorModel = glm::scale(floorModel, glm::vec3{20.0f});
+                shadowShader.use();
+                shadowShader.setMatrix("model", glm::value_ptr(floorModel));
+                glBindVertexArray(VAO[PLANE]);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                // Draw Shadows - END
+                // Draw Scene - BEGIN
+                glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                quadShader.use();
+                quadShader.setInt("iTexture", 0);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, depthMap);
+                glBindVertexArray(VAO[QUAD]);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+
+                /*
 
                 // Camera movement
                 float cameraSpeed = 2.5f * delta;
@@ -391,12 +488,11 @@ int main()
                 // Cubes
                 cubeShader.setMatrix("projection", glm::value_ptr(projection));
                 cubeShader.setMatrix("view", glm::value_ptr(view));
-                for(unsigned int i = 0; i < 10; i++)
+                for(unsigned int i = 0; i < 3; i++)
                 {
                     glm::mat4 model = glm::mat4(1.0f);
                     model = glm::translate(model, cubePos[i]);
-                    float angle = 20.0f * i;
-                    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+                    model = glm::scale(model, glm::vec3(0.5f));
                     cubeShader.setMatrix("model", glm::value_ptr(model));
 
                     // Draw
@@ -409,17 +505,19 @@ int main()
                     glDrawArrays(GL_TRIANGLES, 0, 36);
                 }
 
-                // Quad
+                // Plane
                 glm::mat4 model{1.0f};
                 model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
                 model = glm::scale(model, glm::vec3{20.0f});
                 cubeShader.setMatrix("model", glm::value_ptr(model));
-                glBindVertexArray(VAO[QUAD]);
+                glBindVertexArray(VAO[PLANE]);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, wood);
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, wood);
                 glDrawArrays(GL_TRIANGLES, 0, 6);
+                */
+                // Draw Scene - END
 
                 glfwPollEvents();
                 
