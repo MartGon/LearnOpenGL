@@ -235,7 +235,7 @@ int main()
             // Shadow maps - Framebuffer
             unsigned int depthMapFBO;
             glGenFramebuffers(1, &depthMapFBO);
-            const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
+            const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
             // Shadow map - Depth Map
             unsigned int depthMap;
