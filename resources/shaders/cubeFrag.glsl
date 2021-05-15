@@ -59,8 +59,7 @@ float CalcIntensity(SpotLight spotLight);
 vec3 CalcSpotLight(SpotLight spotLight, vec3 normal);
 
 // Shadow
-
-float CalcShadow(vec4 fragPosLightSpace);
+float CalcShadow(vec4 fragPosLightSpace, vec3 lightDir);
 
 // Lights
 uniform DirLight dirLight;
@@ -122,7 +121,7 @@ void main()
 vec3 CalcDirLight(DirLight dirLight, vec3 normal)
 {
     Light color = CalcColor(dirLight.light, dirLight.dir, normal);
-    return color.ambient + (color.diffuse + color.specular);
+    return (color.ambient + (color.diffuse + color.specular));
 }
 
 vec3 CalcPointLight(PointLight pointLight, vec3 normal)
@@ -131,7 +130,7 @@ vec3 CalcPointLight(PointLight pointLight, vec3 normal)
     float attenuation = CalcAttenuation(pointLight.attenuation, lightRay);
     Light color = CalcColor(pointLight.light, lightRay, normal);
 
-    float shadow = CalcShadow(fragPosLightSpace);
+    float shadow = CalcShadow(fragPosLightSpace, lightRay);
     return (color.ambient + (color.diffuse + color.specular) * (1 - shadow))* attenuation;
 }
 
@@ -204,13 +203,18 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
     return light.specular * spec * texture(material.specular, textureCoords).rgb;
 }
 
-float CalcShadow(vec4 fragPosLightSpace)
+float CalcShadow(vec4 fragPosLightSpace, vec3 lightDir)
 {
+    const float minBias = 0.005f;
+    float maxBias = 0.05f;
+
+    lightDir = normalize(lightDir);
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 
     vec3 shadowCoords = projCoords * 0.5 + 0.5;
     float shadowDepth = texture(shadowMap, shadowCoords.xy).r;
 
-    float currentDepth = shadowCoords.z;
+    float bias = max(minBias, dot(lightDir, normal) * maxBias);
+    float currentDepth = shadowCoords.z - bias;
     return currentDepth > shadowDepth ? 1.0f : 0.0f;
 }
