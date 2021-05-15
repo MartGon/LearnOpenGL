@@ -45,8 +45,8 @@ unsigned int GenTexture(std::filesystem::path path, int textureUnit = GL_TEXTURE
     return texture;
 }
 
-int WINDOW_WIDTH = 640;
-int WINDOW_HEIGHT = 480;
+int WINDOW_WIDTH = 800;
+int WINDOW_HEIGHT = 600;
 
 bool isKeyPressed(GLFWwindow* window, int key)
 {
@@ -75,6 +75,46 @@ void MouseCallback(GLFWwindow* window, double xpos, double ypos)
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
+}
+
+enum ObjIndex
+{
+    CUBE,
+    LIGHT,
+    PLANE,
+    QUAD
+};
+
+void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shader, unsigned int texture, unsigned int specularMap, unsigned int wood)
+{
+    // Draw Cubes
+    for(unsigned int i = 0; i < 3; i++)
+    {
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, cubePos[i]);
+        shader.use();
+        shader.setMatrix("model", glm::value_ptr(model));
+
+        // Draw
+        // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
+        glBindVertexArray(VAO[CUBE]);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    // Draw Floor
+    glm::mat4 floorModel{1.0f};
+    shader.use();
+    shader.setMatrix("model", glm::value_ptr(floorModel));
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, wood);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, wood);
+    glBindVertexArray(VAO[PLANE]);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 int main()
@@ -159,19 +199,20 @@ int main()
                 glm::vec3(-1.0f, 0.0f, 2.0)
             };
             glm::vec3 pointLightPositions[] = {
-                glm::vec3( 0.7f,  1.5f,  2.0f),
+                glm::vec3( -2.0f, 4.0f, -1.0f),
                 glm::vec3( 2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f,  2.0f, -12.0f),
                 glm::vec3( 0.0f,  0.0f, -3.0f)
             };
             float planeVertices[] = 
             {
-                -0.5f,  0.0f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-                0.5f,  0.0f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-                0.5f,  0.0f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-                0.5f,  0.0f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-                -0.5f,  0.0f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-                -0.5f,  0.0f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+                25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+                -25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+                -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+
+                25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
+                -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+                25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 10.0f
             };
             float quadVertices[] = 
             {
@@ -187,7 +228,7 @@ int main()
             // Shadow maps - Framebuffer
             unsigned int depthMapFBO;
             glGenFramebuffers(1, &depthMapFBO);
-            const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+            const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
             // Shadow map - Depth Map
             unsigned int depthMap;
@@ -196,8 +237,10 @@ int main()
             glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+            float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
             glBindTexture(GL_TEXTURE_2D, 0);
 
             // Shadow maps - Framebuffer attachments
@@ -222,14 +265,6 @@ int main()
             LearnOpenGL::Shader shadowShader{shadowVertexPath.generic_string().c_str(), shadowFragPath.generic_string().c_str() };
             LearnOpenGL::Shader quadShader{quadVertexPath.generic_string().c_str(), quadFragPath.generic_string().c_str() };
             cubeShader.use();
-
-            enum ObjIndex
-            {
-                CUBE,
-                LIGHT,
-                PLANE,
-                QUAD
-            };
 
             // Arrays and Buffers
             unsigned int VAO[4];
@@ -355,12 +390,16 @@ int main()
             camera.Position = glm::vec3{0, 0, 3.f};
 
             // Shadow Maps - Ortographic view
-            float zNear = 1.0, zFar =7.5f;
+            float zNear = 1.0, zFar = 7.5f;
             glm::mat4 ortho = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
-            glm::mat4 lightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f), glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::mat4 lightView = glm::lookAt(pointLightPositions[0], glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
             glm::mat4 lightSpaceMat = ortho * lightView;
             shadowShader.use();
             shadowShader.setMatrix("lightSpaceMatrix", glm::value_ptr(lightSpaceMat));
+
+            cubeShader.use();
+            cubeShader.setMatrix("lightSpaceMatrix", glm::value_ptr(lightSpaceMat));
+            cubeShader.setInt("shadowMap", 2);
             
             // Light flags
             bool lightsOn[] = {false, false, false, false};
@@ -382,29 +421,7 @@ int main()
                 glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
                 glClear(GL_DEPTH_BUFFER_BIT);
                 
-                // Draw Cubes
-                for(unsigned int i = 0; i < 3; i++)
-                {
-                    glm::mat4 model = glm::mat4(1.0f);
-                    model = glm::translate(model, cubePos[i]);
-                    model = glm::scale(model, glm::vec3(0.5f));
-                    shadowShader.use();
-                    shadowShader.setMatrix("model", glm::value_ptr(model));
-
-                    // Draw
-                    // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
-                    glBindVertexArray(VAO[CUBE]);
-                    glDrawArrays(GL_TRIANGLES, 0, 36);
-                }
-
-                // Draw Floor
-                glm::mat4 floorModel{1.0f};
-                floorModel = glm::translate(floorModel, glm::vec3(0.0f, -1.0f, 0.0f));
-                floorModel = glm::scale(floorModel, glm::vec3{20.0f});
-                shadowShader.use();
-                shadowShader.setMatrix("model", glm::value_ptr(floorModel));
-                glBindVertexArray(VAO[PLANE]);
-                glDrawArrays(GL_TRIANGLES, 0, 6);
+                DrawScene(cubePos, VAO, shadowShader, texture, specularMap, wood);
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
                 // Draw Shadows - END
@@ -415,15 +432,8 @@ int main()
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                quadShader.use();
-                quadShader.setInt("iTexture", 0);
-
-                glActiveTexture(GL_TEXTURE0);
+                glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, depthMap);
-                glBindVertexArray(VAO[QUAD]);
-                glDrawArrays(GL_TRIANGLES, 0, 6);
-
-                /*
 
                 // Camera movement
                 float cameraSpeed = 2.5f * delta;
@@ -437,18 +447,23 @@ int main()
                 else if(isKeyPressed(window, GLFW_KEY_D))
                     camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
 
+                if(isKeyPressed(window, GLFW_KEY_G))
+                    camera.Position = pointLightPositions[0];
+                else if(isKeyPressed(window, GLFW_KEY_O))
+                    camera.Position = glm::vec3(0.0f);
+
                 // Camera pos
                 cubeShader.use();
                 cubeShader.setVec3("viewPos", glm::value_ptr(camera.Position));
                 cubeShader.setVec3("spotLight.pos", glm::value_ptr(camera.Position));
                 cubeShader.setVec3("spotLight.dir", glm::value_ptr(camera.Front));
 
-                // Point light
-                glm::vec3 lightPos{1.2f, 1.0f, 2.0f};
-
                 // Transformations
                 auto view = camera.GetViewMatrix();                    
-                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);    
+                auto projection = glm::perspective(glm::radians(camera.Zoom),  (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.f);
+                cubeShader.use();
+                cubeShader.setMatrix("projection", glm::value_ptr(projection));
+                cubeShader.setMatrix("view", glm::value_ptr(view));    
 
                 // Light
                 lightShader.use();
@@ -485,39 +500,16 @@ int main()
                     cubeShader.setBool("lightsOn["+ std::to_string(i) + "]", lightsOn[i]);
                 }
 
-                // Cubes
-                cubeShader.setMatrix("projection", glm::value_ptr(projection));
-                cubeShader.setMatrix("view", glm::value_ptr(view));
-                for(unsigned int i = 0; i < 3; i++)
-                {
-                    glm::mat4 model = glm::mat4(1.0f);
-                    model = glm::translate(model, cubePos[i]);
-                    model = glm::scale(model, glm::vec3(0.5f));
-                    cubeShader.setMatrix("model", glm::value_ptr(model));
-
-                    // Draw
-                    // Note: This triggers a segfault if the VerterAttribPointer of a in var is not defined
-                    glActiveTexture(GL_TEXTURE0);
-                    glBindTexture(GL_TEXTURE_2D, texture);
-                    glActiveTexture(GL_TEXTURE1);
-                    glBindTexture(GL_TEXTURE_2D, specularMap);
-                    glBindVertexArray(VAO[CUBE]);
-                    glDrawArrays(GL_TRIANGLES, 0, 36);
-                }
-
-                // Plane
-                glm::mat4 model{1.0f};
-                model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-                model = glm::scale(model, glm::vec3{20.0f});
-                cubeShader.setMatrix("model", glm::value_ptr(model));
-                glBindVertexArray(VAO[PLANE]);
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, wood);
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_2D, wood);
-                glDrawArrays(GL_TRIANGLES, 0, 6);
-                */
+                DrawScene(cubePos, VAO, cubeShader, texture, specularMap, wood);
                 // Draw Scene - END
+
+                quadShader.use();
+                quadShader.setInt("iTexture", 0);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, depthMap);
+                glBindVertexArray(VAO[QUAD]);
+                //glDrawArrays(GL_TRIANGLES, 0, 6);
 
                 glfwPollEvents();
                 

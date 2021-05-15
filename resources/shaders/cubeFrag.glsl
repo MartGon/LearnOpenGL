@@ -58,6 +58,10 @@ struct SpotLight
 float CalcIntensity(SpotLight spotLight);
 vec3 CalcSpotLight(SpotLight spotLight, vec3 normal);
 
+// Shadow
+
+float CalcShadow(vec4 fragPosLightSpace);
+
 // Lights
 uniform DirLight dirLight;
 #define POINT_LIGHTS_COUNT 4
@@ -82,10 +86,14 @@ uniform bool lightsOn[POINT_LIGHTS_COUNT];
 // View angle
 uniform vec3 viewPos;
 
+// Shadow Map
+uniform sampler2D shadowMap;
+
 // Inputs
 in vec3 normal;
 in vec3 fragPos;
 in vec2 textureCoords;
+in vec4 fragPosLightSpace;
 
 // Output
 out vec4 fragColor;
@@ -103,7 +111,6 @@ void main()
             color += CalcPointLight(pointLights[i], normal);
     }
     
-
     if(flashlightOn)
         color += CalcSpotLight(spotLight, normal);
 
@@ -115,7 +122,7 @@ void main()
 vec3 CalcDirLight(DirLight dirLight, vec3 normal)
 {
     Light color = CalcColor(dirLight.light, dirLight.dir, normal);
-    return color.ambient + color.diffuse + color.specular;
+    return color.ambient + (color.diffuse + color.specular);
 }
 
 vec3 CalcPointLight(PointLight pointLight, vec3 normal)
@@ -123,7 +130,9 @@ vec3 CalcPointLight(PointLight pointLight, vec3 normal)
     vec3 lightRay = fragPos - pointLight.pos;
     float attenuation = CalcAttenuation(pointLight.attenuation, lightRay);
     Light color = CalcColor(pointLight.light, lightRay, normal);
-    return (color.ambient + color.diffuse + color.specular)* attenuation;
+
+    float shadow = CalcShadow(fragPosLightSpace);
+    return (color.ambient + (color.diffuse + color.specular) * (1 - shadow))* attenuation;
 }
 
 vec3 CalcSpotLight(SpotLight spotLight, vec3 normal)
@@ -193,4 +202,15 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
     }
 
     return light.specular * spec * texture(material.specular, textureCoords).rgb;
+}
+
+float CalcShadow(vec4 fragPosLightSpace)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+
+    vec3 shadowCoords = projCoords * 0.5 + 0.5;
+    float shadowDepth = texture(shadowMap, shadowCoords.xy).r;
+
+    float currentDepth = shadowCoords.z;
+    return currentDepth > shadowDepth ? 1.0f : 0.0f;
 }
