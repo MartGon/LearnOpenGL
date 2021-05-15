@@ -206,15 +206,22 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
 float CalcShadow(vec4 fragPosLightSpace, vec3 lightDir)
 {
     const float minBias = 0.005f;
-    float maxBias = 0.05f;
+    const float maxBias = 0.05f;
+
+    float shadow = 0.0f;
 
     lightDir = normalize(lightDir);
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    if(projCoords.z <= 1.0f)
+    {
+        vec3 shadowCoords = projCoords * 0.5 + 0.5;
+        float shadowDepth = texture(shadowMap, shadowCoords.xy).r;
 
-    vec3 shadowCoords = projCoords * 0.5 + 0.5;
-    float shadowDepth = texture(shadowMap, shadowCoords.xy).r;
-
-    float bias = max(minBias, dot(lightDir, normal) * maxBias);
-    float currentDepth = shadowCoords.z - bias;
-    return currentDepth > shadowDepth ? 1.0f : 0.0f;
+        float bias = max(minBias, dot(lightDir, normal) * maxBias);
+        float currentDepth = shadowCoords.z - bias;
+        if(currentDepth > shadowDepth)
+            shadow = 1.0f;
+    }
+    
+    return shadow;
 }
