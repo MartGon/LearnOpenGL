@@ -204,24 +204,38 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
     return light.specular * spec * texture(material.specular, textureCoords).rgb;
 }
 
+vec3 gridSamplingDisk[20] = vec3[]
+(
+   vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
+   vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+   vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+   vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+   vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+);
+
 float CalcShadow(vec3 lightPos)
 {
     const float minBias = 0.005f;
     const float maxBias = 0.05f;
+    const float samples = 20;
 
     float shadow = 0.0f;
 
     vec3 lightDir = fragPos - lightPos;
-    float closestDepth = texture(shadowMap, lightDir).r * far_plane;
+    
     float currentDepth = length(lightDir);
     float bias = max(minBias, dot(normalize(lightDir), normal) * maxBias);
 
-    if(currentDepth - maxBias > closestDepth)
-        shadow = 1;
-
-    //fragColor = vec4(vec3(closestDepth / far_plane), 1.0);
-    //fragColor = vec4(vec3(currentDepth / far_plane), 1.0);
-    //fragColor = vec4(vec3((1 -shadow)), 1.0);
+    float viewDistance = length(fragPos - viewPos);
+    float diskRadius = (1.0 + viewDistance / far_plane) / 25.0;
+    for(int i = 0; i < samples; i++)
+    {
+        vec3 offset = gridSamplingDisk[i] * diskRadius;
+        float closestDepth = texture(shadowMap, lightDir + offset).r * far_plane;
+        if(currentDepth - maxBias > closestDepth)
+            shadow += 1;
+    }
+    shadow /= float(samples);
 
     return shadow;
 }
