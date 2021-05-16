@@ -130,7 +130,6 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-
     auto window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Window", NULL, NULL);
     glfwSetWindowPos(window, 1920 * 2 * 3/4 - WINDOW_WIDTH / 2 , 1080 / 2 - WINDOW_HEIGHT / 2);
     if(window)
@@ -206,7 +205,7 @@ int main()
                 glm::vec3(-1.0f, 0.0f, 2.0)
             };
             glm::vec3 pointLightPositions[] = {
-                glm::vec3( -2.0f, 4.0f, -1.0f),
+                glm::vec3( -2.0f, 2.0f, -1.0f),
                 glm::vec3( 2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f,  2.0f, -12.0f),
                 glm::vec3( 0.0f,  0.0f, -3.0f)
@@ -237,23 +236,23 @@ int main()
             glGenFramebuffers(1, &depthMapFBO);
             const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
-            // Shadow map - Depth Map
-            unsigned int depthMap;
-            glGenTextures(1, &depthMap);
-            glBindTexture(GL_TEXTURE_2D, depthMap);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-            float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-            glBindTexture(GL_TEXTURE_2D, 0);
+            // Shadow map - Depth Cube Map
+            unsigned int depthCubeMap;
+            glGenTextures(1, &depthCubeMap);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
+            for(unsigned int face = GL_TEXTURE_CUBE_MAP_POSITIVE_X; face <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z; face++)
+                glTexImage2D(face, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
             // Shadow maps - Framebuffer attachments
             glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMap, 0);
             glDrawBuffer(GL_NONE);
             glReadBuffer(GL_NONE);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -265,11 +264,12 @@ int main()
             std::filesystem::path lightFragPath = shaderFolder / "lightFrag.glsl";
             std::filesystem::path shadowVertexPath = shaderFolder / "shadowVertex.glsl";
             std::filesystem::path shadowFragPath = shaderFolder / "shadowFrag.glsl";
+            std::filesystem::path shadowGeoPath = shaderFolder / "shadowGeo.glsl";
             std::filesystem::path quadVertexPath = shaderFolder / "quadVertex.glsl";
             std::filesystem::path quadFragPath = shaderFolder / "quadFrag.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
             LearnOpenGL::Shader lightShader{vertexPath.generic_string().c_str(), lightFragPath.generic_string().c_str() };
-            LearnOpenGL::Shader shadowShader{shadowVertexPath.generic_string().c_str(), shadowFragPath.generic_string().c_str() };
+            LearnOpenGL::Shader shadowShader{shadowVertexPath.generic_string().c_str(), shadowFragPath.generic_string().c_str(), shadowGeoPath.generic_string().c_str() };
             LearnOpenGL::Shader quadShader{quadVertexPath.generic_string().c_str(), quadFragPath.generic_string().c_str() };
             cubeShader.use();
 
@@ -323,7 +323,6 @@ int main()
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
             glEnableVertexAttribArray(1);
-
 
             // Textures
             std::filesystem::path texturesDir{TEXTURES_DIR};
@@ -396,20 +395,35 @@ int main()
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
 
-            // Shadow Maps - Ortographic view
-            float zNear = 1.0, zFar = 7.5f;
-            glm::mat4 ortho = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, zNear, zFar);
-            glm::mat4 lightView = glm::lookAt(pointLightPositions[0], glm::vec3(0, 0, 0), glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::mat4 lightSpaceMat = ortho * lightView;
-            shadowShader.use();
-            shadowShader.setMatrix("lightSpaceMatrix", glm::value_ptr(lightSpaceMat));
+            // Shadow Maps - Perspective view
+            float zNear = 1.0, zFar = 25.0f;
+            float aspect = (float) SHADOW_WIDTH / (float) SHADOW_HEIGHT;
+            glm::mat4 perspective = glm::perspective(glm::radians(90.0f), aspect, zNear, zFar);
+            glm::mat4 views[] = {
+                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(1, 0, 0), glm::vec3(0.0f, -1.0f, 0.0f)),
+                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(-1, 0, 0), glm::vec3(0.0f, -1.0f, 0.0f)),
+
+                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 1, 0), glm::vec3(0.0f, 0.0f, 1.0f)),
+                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, -1, 0), glm::vec3(0.0f, 0.0f, -1.0f)),
+
+                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 0, 1), glm::vec3(0.0f, -1.0f, 0.0f)),
+                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 0, -1), glm::vec3(0.0f, -1.0f, 0.0f)),
+            };
+            for(unsigned int i = 0; i < 6; i++)
+            {
+                auto lightSpaceMat = perspective * views[i];
+                shadowShader.use();
+                shadowShader.setMatrix("shadowMatrices[" + std::to_string(i) + "]", glm::value_ptr(lightSpaceMat));
+            }
+            shadowShader.setVec3("lightPos", glm::value_ptr(pointLightPositions[0]));
+            shadowShader.setFloat("far_plane", zFar);
 
             cubeShader.use();
-            cubeShader.setMatrix("lightSpaceMatrix", glm::value_ptr(lightSpaceMat));
             cubeShader.setInt("shadowMap", 2);
+            cubeShader.setFloat("far_plane", zFar);
             
             // Light flags
-            bool lightsOn[] = {false, false, false, false};
+            bool lightsOn[] = {true, false, false, false};
             bool sun = false;
             bool flashlight = false;
             bool blinn = true;
@@ -440,7 +454,7 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 glActiveTexture(GL_TEXTURE2);
-                glBindTexture(GL_TEXTURE_2D, depthMap);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
 
                 // Camera movement
                 float cameraSpeed = 2.5f * delta;
@@ -515,7 +529,7 @@ int main()
                 quadShader.setInt("iTexture", 0);
 
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, depthMap);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
                 glBindVertexArray(VAO[QUAD]);
                 //glDrawArrays(GL_TRIANGLES, 0, 6);
 

@@ -59,7 +59,7 @@ float CalcIntensity(SpotLight spotLight);
 vec3 CalcSpotLight(SpotLight spotLight, vec3 normal);
 
 // Shadow
-float CalcShadow(vec4 fragPosLightSpace, vec3 lightDir);
+float CalcShadow(vec3 lightPos);
 
 // Lights
 uniform DirLight dirLight;
@@ -86,7 +86,8 @@ uniform bool lightsOn[POINT_LIGHTS_COUNT];
 uniform vec3 viewPos;
 
 // Shadow Map
-uniform sampler2D shadowMap;
+uniform samplerCube shadowMap;
+uniform float far_plane;
 
 // Inputs
 in vec3 normal;
@@ -130,7 +131,7 @@ vec3 CalcPointLight(PointLight pointLight, vec3 normal)
     float attenuation = CalcAttenuation(pointLight.attenuation, lightRay);
     Light color = CalcColor(pointLight.light, lightRay, normal);
 
-    float shadow = CalcShadow(fragPosLightSpace, lightRay);
+    float shadow = CalcShadow(pointLight.pos);
     return (color.ambient + (color.diffuse + color.specular) * (1 - shadow))* attenuation;
 }
 
@@ -203,32 +204,24 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
     return light.specular * spec * texture(material.specular, textureCoords).rgb;
 }
 
-float CalcShadow(vec4 fragPosLightSpace, vec3 lightDir)
+float CalcShadow(vec3 lightPos)
 {
     const float minBias = 0.005f;
     const float maxBias = 0.05f;
 
     float shadow = 0.0f;
 
-    lightDir = normalize(lightDir);
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    if(projCoords.z <= 1.0f)
-    {
-        vec3 shadowCoords = projCoords * 0.5 + 0.5;
-        float currentDepth = shadowCoords.z;
-        float bias = max(minBias, dot(lightDir, normal) * maxBias);
+    vec3 lightDir = fragPos - lightPos;
+    float closestDepth = texture(shadowMap, lightDir).r * far_plane;
+    float currentDepth = length(lightDir);
+    float bias = max(minBias, dot(normalize(lightDir), normal) * maxBias);
 
-        vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-        for(int x = -1; x <= 1; ++x)
-        {
-            for(int y = -1; y <= 1; ++y)
-            {
-                float pcfDepth = texture(shadowMap, shadowCoords.xy + vec2(x, y) * texelSize).r; 
-                shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
-            }    
-        }
-        shadow /= 9.0;
-    }
+    if(currentDepth - maxBias > closestDepth)
+        shadow = 1;
+
+    //fragColor = vec4(vec3(closestDepth / far_plane), 1.0);
+    //fragColor = vec4(vec3(currentDepth / far_plane), 1.0);
+    //fragColor = vec4(vec3((1 -shadow)), 1.0);
 
     return shadow;
 }
