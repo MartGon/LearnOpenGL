@@ -206,7 +206,7 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
 
 float CalcShadow(vec3 lightPos)
 {
-    const float minBias = 0.005f;
+    const float minBias = 0.0375f;
     const float maxBias = 0.05f;
 
     float shadow = 0.0f;
@@ -216,7 +216,7 @@ float CalcShadow(vec3 lightPos)
     float currentDepth = length(lightDir);
     float bias = max(minBias, dot(normalize(lightDir), normal) * maxBias);
 
-    if(currentDepth - maxBias > closestDepth)
+    if(currentDepth - bias > closestDepth)
         shadow = 1;
 
     //fragColor = vec4(vec3(closestDepth / far_plane), 1.0);

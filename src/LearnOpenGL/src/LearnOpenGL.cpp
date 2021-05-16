@@ -364,17 +364,6 @@ int main()
             float constant = 1.0f;
             float linear = 0.09;
             float quadratic = 0.032;
-            for(auto i = 0; i < 4; i++)
-            {
-                std::string pointLight = "pointLights[" + std::to_string(i) + "]";
-                cubeShader.setVec3(pointLight + ".pos", glm::value_ptr(pointLightPositions[i]));
-                cubeShader.setVec3(pointLight + ".light.ambient", glm::value_ptr(pointLightAmbient));
-                cubeShader.setVec3(pointLight + ".light.diffuse", glm::value_ptr(pointLightDiffuse));
-                cubeShader.setVec3(pointLight + ".light.specular", glm::value_ptr(pointLightSpecular));
-                cubeShader.setFloat(pointLight + ".attenuation.constant", constant);
-                cubeShader.setFloat(pointLight + ".attenuation.linear", linear);
-                cubeShader.setFloat(pointLight + ".attenuation.quadratic", quadratic);
-            }
 
             // Flashlight
             glm::vec3 spotLightAmbient = lightColor * glm::vec3{ 0.0f };
@@ -398,29 +387,6 @@ int main()
             // Shadow Maps - Perspective view
             float zNear = 1.0, zFar = 25.0f;
             float aspect = (float) SHADOW_WIDTH / (float) SHADOW_HEIGHT;
-            glm::mat4 perspective = glm::perspective(glm::radians(90.0f), aspect, zNear, zFar);
-            glm::mat4 views[] = {
-                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(1, 0, 0), glm::vec3(0.0f, -1.0f, 0.0f)),
-                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(-1, 0, 0), glm::vec3(0.0f, -1.0f, 0.0f)),
-
-                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 1, 0), glm::vec3(0.0f, 0.0f, 1.0f)),
-                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, -1, 0), glm::vec3(0.0f, 0.0f, -1.0f)),
-
-                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 0, 1), glm::vec3(0.0f, -1.0f, 0.0f)),
-                glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 0, -1), glm::vec3(0.0f, -1.0f, 0.0f)),
-            };
-            for(unsigned int i = 0; i < 6; i++)
-            {
-                auto lightSpaceMat = perspective * views[i];
-                shadowShader.use();
-                shadowShader.setMatrix("shadowMatrices[" + std::to_string(i) + "]", glm::value_ptr(lightSpaceMat));
-            }
-            shadowShader.setVec3("lightPos", glm::value_ptr(pointLightPositions[0]));
-            shadowShader.setFloat("far_plane", zFar);
-
-            cubeShader.use();
-            cubeShader.setInt("shadowMap", 2);
-            cubeShader.setFloat("far_plane", zFar);
             
             // Light flags
             bool lightsOn[] = {true, false, false, false};
@@ -436,6 +402,49 @@ int main()
                 // Window Input
                 if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
                     glfwSetWindowShouldClose(window, true);
+
+                // Update light pos
+                pointLightPositions[0].x = cos(glfwGetTime()) * 4;
+                pointLightPositions[0].z = sin(glfwGetTime()) * 4;
+                pointLightPositions[0].y = sin(glfwGetTime()) * 2 + 3;
+
+                for(auto i = 0; i < 4; i++)
+                {
+                    std::string pointLight = "pointLights[" + std::to_string(i) + "]";
+                    cubeShader.use();
+                    cubeShader.setVec3(pointLight + ".pos", glm::value_ptr(pointLightPositions[i]));
+                    cubeShader.setVec3(pointLight + ".light.ambient", glm::value_ptr(pointLightAmbient));
+                    cubeShader.setVec3(pointLight + ".light.diffuse", glm::value_ptr(pointLightDiffuse));
+                    cubeShader.setVec3(pointLight + ".light.specular", glm::value_ptr(pointLightSpecular));
+                    cubeShader.setFloat(pointLight + ".attenuation.constant", constant);
+                    cubeShader.setFloat(pointLight + ".attenuation.linear", linear);
+                    cubeShader.setFloat(pointLight + ".attenuation.quadratic", quadratic);
+                }
+
+                glm::mat4 perspective = glm::perspective(glm::radians(90.0f), aspect, zNear, zFar);
+                glm::mat4 views[] = {
+                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(1, 0, 0), glm::vec3(0.0f, -1.0f, 0.0f)),
+                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(-1, 0, 0), glm::vec3(0.0f, -1.0f, 0.0f)),
+
+                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 1, 0), glm::vec3(0.0f, 0.0f, 1.0f)),
+                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, -1, 0), glm::vec3(0.0f, 0.0f, -1.0f)),
+
+                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 0, 1), glm::vec3(0.0f, -1.0f, 0.0f)),
+                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 0, -1), glm::vec3(0.0f, -1.0f, 0.0f)),
+                };
+
+                shadowShader.use();
+                for(unsigned int i = 0; i < 6; i++)
+                {
+                    auto lightSpaceMat = perspective * views[i];
+                    shadowShader.setMatrix("shadowMatrices[" + std::to_string(i) + "]", glm::value_ptr(lightSpaceMat));
+                }
+                shadowShader.setVec3("lightPos", glm::value_ptr(pointLightPositions[0]));
+                shadowShader.setFloat("far_plane", zFar);
+
+                cubeShader.use();
+                cubeShader.setInt("shadowMap", 2);
+                cubeShader.setFloat("far_plane", zFar);
 
                 // Draw Shadows - BEGIN
                 glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
