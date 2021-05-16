@@ -88,7 +88,7 @@ enum ObjIndex
 void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shader, unsigned int texture, unsigned int specularMap, unsigned int wood)
 {
     // Draw Cubes
-    for(unsigned int i = 0; i < 3; i++)
+    for(unsigned int i = 0; i < 5; i++)
     {
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, cubePos[i]);
@@ -108,16 +108,20 @@ void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shade
 
     // Draw Floor
     glDisable(GL_CULL_FACE);
-    glm::mat4 floorModel{1.0f};
+    glm::mat4 boxModel{1.0f};
+    boxModel = glm::scale(boxModel, glm::vec3{5.0f});
     shader.use();
-    shader.setMatrix("model", glm::value_ptr(floorModel));
+    shader.setBool("reverseNormals", true);
+    shader.setMatrix("model", glm::value_ptr(boxModel));
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, wood);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, wood);
-    glBindVertexArray(VAO[PLANE]);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(VAO[CUBE]);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
     glEnable(GL_CULL_FACE);
+
+    shader.setBool("reverseNormals", false);
 }
 
 int main()
@@ -200,12 +204,14 @@ int main()
                 -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left        
             };         
             glm::vec3 cubePos[] = {
-                glm::vec3(0.0f, 1.5f, 0.0),
-                glm::vec3(2.0f, 0.0f, 1.0),
-                glm::vec3(-1.0f, 0.0f, 2.0)
+                glm::vec3(4.0f, -3.5f, 0.0),
+                glm::vec3(2.0f, 3.0f, 1.0),
+                glm::vec3(-3.0f, -1.0f, 0.0),
+                glm::vec3(-1.5f, 1.0f, 1.5),
+                glm::vec3(-1.5f, 2.0f, -3.0)
             };
             glm::vec3 pointLightPositions[] = {
-                glm::vec3( -2.0f, 2.0f, -1.0f),
+                glm::vec3( 0.0f, 0.0f, 0.0f),
                 glm::vec3( 2.3f, -3.3f, -4.0f),
                 glm::vec3(-4.0f,  2.0f, -12.0f),
                 glm::vec3( 0.0f,  0.0f, -3.0f)
