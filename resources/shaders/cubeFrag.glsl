@@ -215,7 +215,7 @@ vec3 gridSamplingDisk[20] = vec3[]
 
 float CalcShadow(vec3 lightPos)
 {
-    const float minBias = 0.005f;
+    const float minBias = 0.0375f;
     const float maxBias = 0.05f;
     const float samples = 20;
 
