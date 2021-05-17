@@ -98,18 +98,19 @@ out vec4 fragColor;
 void main()
 {
     vec3 color = vec3(0.0);
-    
+    vec3 sampledNormal = normalize(texture(material.normal, textureCoords).rgb * 2.0 - 1.0);
+
     if(sunOn)
-        color += CalcDirLight(dirLight, normal);
+        color += CalcDirLight(dirLight, sampledNormal);
 
     for(int i = 0; i < 4; i++)
     {
         if(lightsOn[i])
-            color += CalcPointLight(pointLights[i], normal);
+            color += CalcPointLight(pointLights[i], sampledNormal);
     }
     
     if(flashlightOn)
-        color += CalcSpotLight(spotLight, normal);
+        color += CalcSpotLight(spotLight, sampledNormal);
 
     float gamma = 2.2;
     color = pow(color, vec3(1/gamma));
