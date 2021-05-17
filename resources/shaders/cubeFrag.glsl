@@ -91,6 +91,7 @@ in vec3 normal;
 in vec3 fragPos;
 in vec2 textureCoords;
 in vec4 fragPosLightSpace;
+in mat3 tbn;
 
 // Output
 out vec4 fragColor;
@@ -99,6 +100,7 @@ void main()
 {
     vec3 color = vec3(0.0);
     vec3 sampledNormal = normalize(texture(material.normal, textureCoords).rgb * 2.0 - 1.0);
+    sampledNormal = sampledNormal * tbn;
 
     if(sunOn)
         color += CalcDirLight(dirLight, sampledNormal);

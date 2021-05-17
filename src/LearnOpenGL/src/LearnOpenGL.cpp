@@ -122,9 +122,10 @@ void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shade
 
     // Draw wall
     glm::mat4 wall{1.0f};
-    wall = glm::translate(wall, glm::vec3(0.0f, 0.f, -3.0f));
-    wall = glm::rotate(wall, glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-    wall = glm::scale(wall, glm::vec3{1.f / 25.f});
+    wall = glm::translate(wall, glm::vec3(0.0f, -2.0f, 0.0f));
+    //wall = glm::rotate(wall, glm::radians(45.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+    wall = glm::rotate(wall, (float)glfwGetTime(), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+    //wall = glm::scale(wall, glm::vec3{2.f / 25.f});
     
     shader.use();
     shader.setMatrix("model", glm::value_ptr(wall));
@@ -231,16 +232,6 @@ int main()
                 glm::vec3(-4.0f,  2.0f, -12.0f),
                 glm::vec3( 0.0f,  0.0f, -3.0f)
             };
-            float planeVertices[] = 
-            {
-                25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  1.0f,  1.0f,
-                -25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  1.0f,
-                -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
-
-                25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  1.0f,  1.0f,
-                -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
-                25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f
-            };
             float quadVertices[] = 
             {
                 -1.0f, -1.0f,   0.0f, 0.0f,
@@ -249,6 +240,46 @@ int main()
                 1.0f, 1.0f,     1.0f, 1.0f,
                 -1.0f, 1.0f,    0.0f, 1.0f,
                 -1.0f, -1.0f,   0.0f, 0.0f,
+            };
+
+            // Plane vertices
+            glm::vec3 p1{-1.0f, -1.0f, 0.0f};
+            glm::vec3 p2{-1.0f, 1.0f, 0.0f};
+            glm::vec3 p3{1.0f, 1.0f, 0.0f};
+            glm::vec3 p4{1.0f, -1.0f, 0.0f};
+
+            glm::vec2 uv1{0.0f, 0.0f};
+            glm::vec2 uv2{0.0f, 1.0f};
+            glm::vec2 uv3{1.0f, 1.0f};
+            glm::vec2 uv4{1.0f, 0.0f};
+
+            // Triangle 1
+            auto edge1 = p2 - p1;
+            auto edge2 = p3 - p1;
+            auto deltaUV1 = uv2 - uv1;
+            auto deltaUV2 = uv3 - uv1;
+
+            glm::mat2 delta(deltaUV1, deltaUV2);
+            glm::mat2x3 edges(edge1, edge2);
+            auto res = edges * glm::inverse(delta);
+
+            // Triangle 4
+            auto edge3 = p4 - p1;
+            auto deltaUV3 = uv4 - uv1;
+
+            glm::mat2 delta2(deltaUV2, deltaUV3);
+            glm::mat2x3 edges2(edge2, edge3);
+            auto res2 = edges2 * glm::inverse(delta2);
+
+            float planeVertices[] = 
+            {
+                p1.x, p1.y, p1.z,       0.0f, 0.0f, 1.0f,   uv1.x, uv1.y,   res[0].x, res[0].y, res[0].z, res[1].x, res[1].y, res[1].z, 
+                p2.x, p2.y, p2.z,       0.0f, 0.0f, 1.0f,   uv2.x, uv2.y,   res[0].x, res[0].y, res[0].z, res[1].x, res[1].y, res[1].z, 
+                p3.x, p3.y, p3.z,       0.0f, 0.0f, 1.0f,   uv3.x, uv3.y,   res[0].x, res[0].y, res[0].z, res[1].x, res[1].y, res[1].z, 
+
+                p1.x, p1.y, p1.z,       0.0f, 0.0f, 1.0f,   uv1.x, uv1.y,   res2[0].x, res2[0].y, res2[0].z, res2[1].x, res2[1].y, res2[1].z, 
+                p3.x, p3.y, p3.z,       0.0f, 0.0f, 1.0f,   uv3.x, uv3.y,   res2[0].x, res2[0].y, res2[0].z, res2[1].x, res2[1].y, res2[1].z, 
+                p4.x, p4.y, p4.z,       0.0f, 0.0f, 1.0f,   uv4.x, uv4.y,   res2[0].x, res2[0].y, res2[0].z, res2[1].x, res2[1].y, res2[1].z, 
             };
 
             // Shader program
@@ -288,14 +319,20 @@ int main()
             glBindBuffer(GL_ARRAY_BUFFER, VBO[PLANE]);
             glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
 
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(0 * sizeof(float)));
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(0 * sizeof(float)));
             glEnableVertexAttribArray(0);
 
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(3 * sizeof(float)));
             glEnableVertexAttribArray(1);
 
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(6 * sizeof(float)));
             glEnableVertexAttribArray(2);
+
+            glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(8 * sizeof(float)));
+            glEnableVertexAttribArray(3);
+
+            glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(11 * sizeof(float)));
+            glEnableVertexAttribArray(4);
 
             // Light source
             glBindVertexArray(VAO[LIGHT]);
@@ -388,7 +425,7 @@ int main()
             bool blinn = true;
 
             // Game loop
-            float delta = 0;
+            float deltaTime = 0;
             while(!glfwWindowShouldClose(window))
             {   
                 float now = glfwGetTime();
@@ -420,16 +457,16 @@ int main()
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                 // Camera movement
-                float cameraSpeed = 2.5f * delta;
+                float cameraSpeed = 2.5f * deltaTime;
                 if(isKeyPressed(window, GLFW_KEY_W))
-                    camera.ProcessKeyboard(Camera_Movement::FORWARD, delta);
+                    camera.ProcessKeyboard(Camera_Movement::FORWARD, deltaTime);
                 else if(isKeyPressed(window, GLFW_KEY_S))
-                    camera.ProcessKeyboard(Camera_Movement::BACKWARD, delta);
+                    camera.ProcessKeyboard(Camera_Movement::BACKWARD, deltaTime);
 
                 if(isKeyPressed(window, GLFW_KEY_A))
-                    camera.ProcessKeyboard(Camera_Movement::LEFT, delta);
+                    camera.ProcessKeyboard(Camera_Movement::LEFT, deltaTime);
                 else if(isKeyPressed(window, GLFW_KEY_D))
-                    camera.ProcessKeyboard(Camera_Movement::RIGHT, delta);
+                    camera.ProcessKeyboard(Camera_Movement::RIGHT, deltaTime);
 
                 if(isKeyPressed(window, GLFW_KEY_G))
                     camera.Position = pointLightPositions[0];
@@ -500,7 +537,7 @@ int main()
                 // Swap buffers
                 glfwSwapBuffers(window);
 
-                delta = glfwGetTime() - now;
+                deltaTime = glfwGetTime() - now;
             }
         }
     }
