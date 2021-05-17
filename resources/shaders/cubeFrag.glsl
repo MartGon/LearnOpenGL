@@ -91,7 +91,12 @@ in vec3 normal;
 in vec3 fragPos;
 in vec2 textureCoords;
 in vec4 fragPosLightSpace;
+
+// Normal mapping
 in mat3 tbn;
+in vec3 tangentLightPos;
+in vec3 tangentViewPos;
+in vec3 tangentFragPos;
 
 // Output
 out vec4 fragColor;
@@ -100,7 +105,6 @@ void main()
 {
     vec3 color = vec3(0.0);
     vec3 sampledNormal = normalize(texture(material.normal, textureCoords).rgb * 2.0 - 1.0);
-    sampledNormal = sampledNormal * tbn;
 
     if(sunOn)
         color += CalcDirLight(dirLight, sampledNormal);
@@ -181,13 +185,15 @@ vec3 CalcAmbient(Light light)
 
 vec3 CalcDiffuse(Light light, vec3 lightDir, vec3 normal)
 {
+    lightDir = normalize(tangentFragPos - tangentLightPos);
     float diff = max(dot(-lightDir, normal), 0.0);
     return light.diffuse * diff * texture(material.diffuse, textureCoords).rgb;
 }
 
 vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
 {   
-    vec3 viewDir = normalize(viewPos - fragPos);
+    lightDir = normalize(tangentFragPos - tangentLightPos);
+    vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
     float spec = 0;
     if(blinn)
     {
@@ -202,12 +208,3 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
 
     return light.specular * spec * texture(material.specular, textureCoords).rgb;
 }
-
-vec3 gridSamplingDisk[20] = vec3[]
-(
-   vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1), 
-   vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
-   vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
-   vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
-   vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
-);

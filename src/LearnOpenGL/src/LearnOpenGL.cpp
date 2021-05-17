@@ -434,7 +434,7 @@ int main()
                     glfwSetWindowShouldClose(window, true);
 
                 // Update light pos
-                pointLightPositions[0].y = sin(glfwGetTime()) * 2.5f;
+                pointLightPositions[0].y = sin(glfwGetTime()) * 0.15f;
 
                 for(auto i = 0; i < 4; i++)
                 {
