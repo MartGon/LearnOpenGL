@@ -85,10 +85,11 @@ enum ObjIndex
     QUAD
 };
 
-void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shader, unsigned int texture, unsigned int specularMap, unsigned int wood)
+void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shader, unsigned int texture, 
+    unsigned int specularMap, unsigned int wood, unsigned int wallTexture = 0, unsigned int wallNormalTexture = 0)
 {
     // Draw Cubes
-    for(unsigned int i = 0; i < 5; i++)
+    for(unsigned int i = 0; i < 0; i++)
     {
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, cubePos[i]);
@@ -108,20 +109,34 @@ void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shade
 
     // Draw Floor
     glDisable(GL_CULL_FACE);
-    glm::mat4 boxModel{1.0f};
-    boxModel = glm::scale(boxModel, glm::vec3{5.0f});
+    glm::mat4 floor{1.0f};
+    floor = glm::scale(floor, glm::vec3{5.0f});
     shader.use();
-    shader.setBool("reverseNormals", true);
-    shader.setMatrix("model", glm::value_ptr(boxModel));
+    shader.setMatrix("model", glm::value_ptr(floor));
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, wood);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, wood);
-    glBindVertexArray(VAO[CUBE]);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-    glEnable(GL_CULL_FACE);
+    glBindVertexArray(VAO[PLANE]);
+    //glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    shader.setBool("reverseNormals", false);
+    // Draw wall
+    glm::mat4 wall{1.0f};
+    wall = glm::translate(wall, glm::vec3(0.0f, 0.f, -3.0f));
+    wall = glm::rotate(wall, glm::radians(90.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+    wall = glm::scale(wall, glm::vec3{1.f / 25.f});
+    
+    shader.use();
+    shader.setMatrix("model", glm::value_ptr(wall));
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, wallTexture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, wallTexture);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, wallNormalTexture);
+    glBindVertexArray(VAO[PLANE]);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glEnable(GL_CULL_FACE);
 }
 
 int main()
@@ -218,13 +233,13 @@ int main()
             };
             float planeVertices[] = 
             {
-                25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
-                -25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
-                -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
+                25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  1.0f,  1.0f,
+                -25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,   0.0f,  1.0f,
+                -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
 
-                25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  25.0f,  0.0f,
-                -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
-                25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 10.0f
+                25.0f, -0.5f,  25.0f,  0.0f, 1.0f, 0.0f,  1.0f,  1.0f,
+                -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+                25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  1.0f, 0.0f
             };
             float quadVertices[] = 
             {
@@ -234,48 +249,17 @@ int main()
                 1.0f, 1.0f,     1.0f, 1.0f,
                 -1.0f, 1.0f,    0.0f, 1.0f,
                 -1.0f, -1.0f,   0.0f, 0.0f,
-
             };
-
-            // Shadow maps - Framebuffer
-            unsigned int depthMapFBO;
-            glGenFramebuffers(1, &depthMapFBO);
-            const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-
-            // Shadow map - Depth Cube Map
-            unsigned int depthCubeMap;
-            glGenTextures(1, &depthCubeMap);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
-            for(unsigned int face = GL_TEXTURE_CUBE_MAP_POSITIVE_X; face <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z; face++)
-                glTexImage2D(face, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-            // Shadow maps - Framebuffer attachments
-            glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-
-            glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubeMap, 0);
-            glDrawBuffer(GL_NONE);
-            glReadBuffer(GL_NONE);
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
             // Shader program
             std::filesystem::path shaderFolder{SHADERS_DIR};
             std::filesystem::path vertexPath = shaderFolder / "vertex.glsl";
             std::filesystem::path cubeFragPath = shaderFolder / "cubeFrag.glsl";
             std::filesystem::path lightFragPath = shaderFolder / "lightFrag.glsl";
-            std::filesystem::path shadowVertexPath = shaderFolder / "shadowVertex.glsl";
-            std::filesystem::path shadowFragPath = shaderFolder / "shadowFrag.glsl";
-            std::filesystem::path shadowGeoPath = shaderFolder / "shadowGeo.glsl";
             std::filesystem::path quadVertexPath = shaderFolder / "quadVertex.glsl";
             std::filesystem::path quadFragPath = shaderFolder / "quadFrag.glsl";
             LearnOpenGL::Shader cubeShader{vertexPath.generic_string().c_str(), cubeFragPath.generic_string().c_str() };
             LearnOpenGL::Shader lightShader{vertexPath.generic_string().c_str(), lightFragPath.generic_string().c_str() };
-            LearnOpenGL::Shader shadowShader{shadowVertexPath.generic_string().c_str(), shadowFragPath.generic_string().c_str(), shadowGeoPath.generic_string().c_str() };
             LearnOpenGL::Shader quadShader{quadVertexPath.generic_string().c_str(), quadFragPath.generic_string().c_str() };
             cubeShader.use();
 
@@ -341,10 +325,17 @@ int main()
             std::filesystem::path woodPath = texturesDir / "wood.png";
             auto wood = GenTexture(woodPath, GL_TEXTURE0, GL_RGBA, GL_SRGB_ALPHA);
 
+            std::filesystem::path wallPath = texturesDir / "brickwall.jpg";
+            auto wall = GenTexture(wallPath, GL_TEXTURE0, GL_RGB, GL_SRGB);
+
+            std::filesystem::path wallNormalPath = texturesDir / "brickwall_normal.jpg";
+            auto wallNormal = GenTexture(wallNormalPath, GL_TEXTURE0, GL_RGB, GL_SRGB);
+
             // Set material properties
             cubeShader.use();
             cubeShader.setInt("material.diffuse", 0);
             cubeShader.setInt("material.specular", 1);
+            cubeShader.setInt("material.normal", 3);
             cubeShader.setFloat("material.shininess", 8.0f);
 
             // Light colors
@@ -389,10 +380,6 @@ int main()
 
             // Set camera pos
             camera.Position = glm::vec3{0, 0, 3.f};
-
-            // Shadow Maps - Perspective view
-            float zNear = 1.0, zFar = 25.0f;
-            float aspect = (float) SHADOW_WIDTH / (float) SHADOW_HEIGHT;
             
             // Light flags
             bool lightsOn[] = {true, false, false, false};
@@ -425,49 +412,12 @@ int main()
                     cubeShader.setFloat(pointLight + ".attenuation.quadratic", quadratic);
                 }
 
-                glm::mat4 perspective = glm::perspective(glm::radians(90.0f), aspect, zNear, zFar);
-                glm::mat4 views[] = {
-                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(1, 0, 0), glm::vec3(0.0f, -1.0f, 0.0f)),
-                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(-1, 0, 0), glm::vec3(0.0f, -1.0f, 0.0f)),
-
-                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 1, 0), glm::vec3(0.0f, 0.0f, 1.0f)),
-                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, -1, 0), glm::vec3(0.0f, 0.0f, -1.0f)),
-
-                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 0, 1), glm::vec3(0.0f, -1.0f, 0.0f)),
-                    glm::lookAt(pointLightPositions[0], pointLightPositions[0] + glm::vec3(0, 0, -1), glm::vec3(0.0f, -1.0f, 0.0f)),
-                };
-
-                shadowShader.use();
-                for(unsigned int i = 0; i < 6; i++)
-                {
-                    auto lightSpaceMat = perspective * views[i];
-                    shadowShader.setMatrix("shadowMatrices[" + std::to_string(i) + "]", glm::value_ptr(lightSpaceMat));
-                }
-                shadowShader.setVec3("lightPos", glm::value_ptr(pointLightPositions[0]));
-                shadowShader.setFloat("far_plane", zFar);
-
-                cubeShader.use();
-                cubeShader.setInt("shadowMap", 2);
-                cubeShader.setFloat("far_plane", zFar);
-
-                // Draw Shadows - BEGIN
-                glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-                glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-                glClear(GL_DEPTH_BUFFER_BIT);
-                
-                DrawScene(cubePos, VAO, shadowShader, texture, specularMap, wood);
-
-                glBindFramebuffer(GL_FRAMEBUFFER, 0);
-                // Draw Shadows - END
                 // Draw Scene - BEGIN
                 glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
                 // Clear
                 glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-                glActiveTexture(GL_TEXTURE2);
-                glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
 
                 // Camera movement
                 float cameraSpeed = 2.5f * delta;
@@ -535,14 +485,13 @@ int main()
                 }
 
                 glCullFace(GL_BACK);
-                DrawScene(cubePos, VAO, cubeShader, texture, specularMap, wood);
+                DrawScene(cubePos, VAO, cubeShader, texture, specularMap, wood, wall, wallNormal);
                 // Draw Scene - END
                 
                 quadShader.use();
                 quadShader.setInt("iTexture", 0);
 
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubeMap);
                 glBindVertexArray(VAO[QUAD]);
                 //glDrawArrays(GL_TRIANGLES, 0, 6);
 

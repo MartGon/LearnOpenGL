@@ -72,6 +72,7 @@ struct Material
 {
     sampler2D diffuse;
     sampler2D specular;
+    sampler2D normal;
     float shininess;
 };
 uniform Material material;
@@ -84,10 +85,6 @@ uniform bool lightsOn[POINT_LIGHTS_COUNT];
 
 // View angle
 uniform vec3 viewPos;
-
-// Shadow Map
-uniform samplerCube shadowMap;
-uniform float far_plane;
 
 // Inputs
 in vec3 normal;
@@ -131,8 +128,7 @@ vec3 CalcPointLight(PointLight pointLight, vec3 normal)
     float attenuation = CalcAttenuation(pointLight.attenuation, lightRay);
     Light color = CalcColor(pointLight.light, lightRay, normal);
 
-    float shadow = CalcShadow(pointLight.pos);
-    return (color.ambient + (color.diffuse + color.specular) * (1 - shadow))* attenuation;
+    return (color.ambient + (color.diffuse + color.specular))* attenuation;
 }
 
 vec3 CalcSpotLight(SpotLight spotLight, vec3 normal)
@@ -212,30 +208,3 @@ vec3 gridSamplingDisk[20] = vec3[]
    vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
    vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
 );
-
-float CalcShadow(vec3 lightPos)
-{
-    const float minBias = 0.0375f;
-    const float maxBias = 0.05f;
-    const float samples = 20;
-
-    float shadow = 0.0f;
-
-    vec3 lightDir = fragPos - lightPos;
-    
-    float currentDepth = length(lightDir);
-    float bias = max(minBias, dot(normalize(lightDir), normal) * maxBias);
-
-    float viewDistance = length(fragPos - viewPos);
-    float diskRadius = (1.0 + viewDistance / far_plane) / 25.0;
-    for(int i = 0; i < samples; i++)
-    {
-        vec3 offset = gridSamplingDisk[i] * diskRadius;
-        float closestDepth = texture(shadowMap, lightDir + offset).r * far_plane;
-        if(currentDepth - maxBias > closestDepth)
-            shadow += 1;
-    }
-    shadow /= float(samples);
-
-    return shadow;
-}
