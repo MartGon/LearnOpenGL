@@ -73,9 +73,15 @@ struct Material
     sampler2D diffuse;
     sampler2D specular;
     sampler2D normal;
+    sampler2D depth;
     float shininess;
 };
 uniform Material material;
+
+// Parallax
+
+vec2 CalculateParallaxCoords(vec2 texCoords, vec3 viewDir);
+vec2 GetParallaxCoords();
 
 // Flags
 uniform bool blinn;
@@ -104,7 +110,11 @@ out vec4 fragColor;
 void main()
 {
     vec3 color = vec3(0.0);
-    vec3 sampledNormal = normalize(texture(material.normal, textureCoords).rgb * 2.0 - 1.0);
+    vec2 texCoords = GetParallaxCoords();
+    if(texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
+        discard;
+        
+    vec3 sampledNormal = normalize(texture(material.normal, texCoords).rgb * 2.0 - 1.0);
 
     if(sunOn)
         color += CalcDirLight(dirLight, sampledNormal);
@@ -121,6 +131,21 @@ void main()
     float gamma = 2.2;
     color = pow(color, vec3(1/gamma));
     fragColor = vec4(color, 1.0f);
+    //fragColor = texture(material.depth, textureCoords);
+}
+
+vec2 GetParallaxCoords()
+{
+    vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
+    return CalculateParallaxCoords(textureCoords, viewDir);
+}
+
+vec2 CalculateParallaxCoords(vec2 texCoords, vec3 viewDir)
+{
+    const float height_scale = 0.05f;
+    float height = texture(material.depth, texCoords).r;
+    vec2 offset = viewDir.xy / viewDir.z * (height * height_scale);
+    return texCoords - offset;
 }
 
 vec3 CalcDirLight(DirLight dirLight, vec3 normal)
@@ -180,14 +205,14 @@ Light CalcColor(Light light, vec3 lightDir, vec3 normal)
 
 vec3 CalcAmbient(Light light)
 {
-    return light.ambient * vec3(texture(material.diffuse, textureCoords));
+    return light.ambient * vec3(texture(material.diffuse, GetParallaxCoords()));
 }
 
 vec3 CalcDiffuse(Light light, vec3 lightDir, vec3 normal)
 {
     lightDir = normalize(tangentFragPos - tangentLightPos);
     float diff = max(dot(-lightDir, normal), 0.0);
-    return light.diffuse * diff * texture(material.diffuse, textureCoords).rgb;
+    return light.diffuse * diff * texture(material.diffuse, GetParallaxCoords()).rgb;
 }
 
 vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
@@ -206,5 +231,5 @@ vec3 CalcSpecular(Light light, vec3 lightDir, vec3 normal)
         spec = pow(max(dot(reflected, viewDir), 0.0), material.shininess);
     }
 
-    return light.specular * spec * texture(material.specular, textureCoords).rgb;
+    return light.specular * spec * texture(material.specular, GetParallaxCoords()).rgb;
 }

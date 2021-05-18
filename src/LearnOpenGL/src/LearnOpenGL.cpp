@@ -86,7 +86,7 @@ enum ObjIndex
 };
 
 void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shader, unsigned int texture, 
-    unsigned int specularMap, unsigned int wood, unsigned int wallTexture = 0, unsigned int wallNormalTexture = 0)
+    unsigned int specularMap, unsigned int wood, unsigned int wallTexture = 0, unsigned int wallNormalTexture = 0, unsigned int wallDepthTexture = 0)
 {
     // Draw Cubes
     for(unsigned int i = 0; i < 0; i++)
@@ -122,9 +122,9 @@ void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shade
 
     // Draw wall
     glm::mat4 wall{1.0f};
-    wall = glm::translate(wall, glm::vec3(0.0f, -2.0f, 0.0f));
+    wall = glm::translate(wall, glm::vec3(0.0f, 0.0f, -3.0f));
     //wall = glm::rotate(wall, glm::radians(45.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-    wall = glm::rotate(wall, (float)glfwGetTime(), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
+    //wall = glm::rotate(wall, (float)glfwGetTime(), glm::normalize(glm::vec3(1.0, 0.0, 0.0)));
     //wall = glm::scale(wall, glm::vec3{2.f / 25.f});
     
     shader.use();
@@ -135,6 +135,8 @@ void DrawScene(glm::vec3* cubePos, unsigned int* VAO, LearnOpenGL::Shader& shade
     glBindTexture(GL_TEXTURE_2D, wallTexture);
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, wallNormalTexture);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, wallDepthTexture);
     glBindVertexArray(VAO[PLANE]);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glEnable(GL_CULL_FACE);
@@ -151,9 +153,9 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     auto window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Window", NULL, NULL);
-    glfwSetWindowPos(window, 1920 * 2 * 3/4 - WINDOW_WIDTH / 2 , 1080 / 2 - WINDOW_HEIGHT / 2);
     if(window)
     {   
+        glfwSetWindowPos(window, 1920 * 2 * 3/4 - WINDOW_WIDTH / 2 , 1080 / 2 - WINDOW_HEIGHT / 2);
         glfwMakeContextCurrent(window);
         glfwSetFramebufferSizeCallback(window, [](GLFWwindow* window, int width, int height)
         {
@@ -362,17 +364,21 @@ int main()
             std::filesystem::path woodPath = texturesDir / "wood.png";
             auto wood = GenTexture(woodPath, GL_TEXTURE0, GL_RGBA, GL_SRGB_ALPHA);
 
-            std::filesystem::path wallPath = texturesDir / "brickwall.jpg";
+            std::filesystem::path wallPath = texturesDir / "bricks2.jpg";
             auto wall = GenTexture(wallPath, GL_TEXTURE0, GL_RGB, GL_SRGB);
 
-            std::filesystem::path wallNormalPath = texturesDir / "brickwall_normal.jpg";
-            auto wallNormal = GenTexture(wallNormalPath, GL_TEXTURE0, GL_RGB, GL_SRGB);
+            std::filesystem::path wallNormalPath = texturesDir / "bricks2_normal.jpg";
+            auto wallNormal = GenTexture(wallNormalPath, GL_TEXTURE3, GL_RGB, GL_SRGB);
+
+            std::filesystem::path wallDepthPath = texturesDir / "bricks2_disp.jpg";
+            auto wallDepth = GenTexture(wallDepthPath, GL_TEXTURE4, GL_RGB, GL_SRGB);
 
             // Set material properties
             cubeShader.use();
             cubeShader.setInt("material.diffuse", 0);
             cubeShader.setInt("material.specular", 1);
             cubeShader.setInt("material.normal", 3);
+            cubeShader.setInt("material.depth", 4);
             cubeShader.setFloat("material.shininess", 8.0f);
 
             // Light colors
@@ -416,7 +422,7 @@ int main()
             cubeShader.setFloat("spotLight.oCutOff", glm::cos(glm::radians(12.0f)));
 
             // Set camera pos
-            camera.Position = glm::vec3{0, 0, 3.f};
+            camera.Position = glm::vec3{0, 0, -0.5f};
             
             // Light flags
             bool lightsOn[] = {true, false, false, false};
@@ -522,7 +528,7 @@ int main()
                 }
 
                 glCullFace(GL_BACK);
-                DrawScene(cubePos, VAO, cubeShader, texture, specularMap, wood, wall, wallNormal);
+                DrawScene(cubePos, VAO, cubeShader, texture, specularMap, wood, wall, wallNormal, wallDepth);
                 // Draw Scene - END
                 
                 quadShader.use();
