@@ -144,12 +144,13 @@ vec2 CalculateParallaxCoords(vec2 texCoords, vec3 viewDir)
 {
     const float minLayers = 8.0f;
     const float maxLayers = 32.0f;
-    const float height_scale = 0.0375f;
+    const float height_scale = 0.1f;
     float numLayers = max(minLayers, round(dot(viewDir, vec3(0.0f, 0.0f, 1.0f)) * maxLayers));
     float stepSize = 1 / numLayers;
     
+    int layer = 0;
     vec2 currentTexCoords = texCoords;
-    for(int layer = 0; layer < numLayers; layer++)
+    for(layer = 0; layer < numLayers; layer++)
     {
         float layerDepth = stepSize * layer;
         float offsetMagnitude = (1 + layerDepth) * height_scale;
@@ -158,8 +159,26 @@ vec2 CalculateParallaxCoords(vec2 texCoords, vec3 viewDir)
         float currentDepthValue = texture(material.depth, currentTexCoords).r;
 
         if(layerDepth > currentDepthValue)
+        {
             break;
+        }
     }
+
+    float layerDepth = stepSize * layer;
+    float prevLayerDepth = stepSize * max(layer - 1, 0);
+
+    vec2 prevTexCoords = texCoords - viewDir.xy  * (1 + prevLayerDepth) * height_scale;
+
+    float depth = texture(material.depth, currentTexCoords).r;
+    float prevDepth = texture(material.depth, prevTexCoords).r;
+
+    float diff = layerDepth - depth;
+    float prevDiff = prevDepth - prevLayerDepth;
+    float weight = diff / (diff + prevDiff);
+    // We are giving the most weight based on the least difference, that is distance to the real point
+    // That's why the closest is diff to (diff + prevDiff), the closest is weight to 1 
+    // and thus the less it's corresponding coords contribute to the interpolation.
+    currentTexCoords = prevTexCoords * (weight) + currentTexCoords * (1 -weight);
 
     return currentTexCoords;
 }
