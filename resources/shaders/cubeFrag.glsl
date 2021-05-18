@@ -142,10 +142,11 @@ vec2 GetParallaxCoords()
 
 vec2 CalculateParallaxCoords(vec2 texCoords, vec3 viewDir)
 {
+    const float minLayers = 8.0f;
+    const float maxLayers = 32.0f;
     const float height_scale = 0.0375f;
-    const float numLayers = 10.0f;
+    float numLayers = max(minLayers, round(dot(viewDir, vec3(0.0f, 0.0f, 1.0f)) * maxLayers));
     float stepSize = 1 / numLayers;
-    int layer = 0;
     
     vec2 currentTexCoords = texCoords;
     for(int layer = 0; layer < numLayers; layer++)
