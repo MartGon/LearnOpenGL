@@ -113,7 +113,7 @@ void main()
     vec2 texCoords = GetParallaxCoords();
     if(texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0)
         discard;
-        
+
     vec3 sampledNormal = normalize(texture(material.normal, texCoords).rgb * 2.0 - 1.0);
 
     if(sunOn)
@@ -142,10 +142,25 @@ vec2 GetParallaxCoords()
 
 vec2 CalculateParallaxCoords(vec2 texCoords, vec3 viewDir)
 {
-    const float height_scale = 0.05f;
-    float height = texture(material.depth, texCoords).r;
-    vec2 offset = viewDir.xy / viewDir.z * (height * height_scale);
-    return texCoords - offset;
+    const float height_scale = 0.0375f;
+    const float numLayers = 10.0f;
+    float stepSize = 1 / numLayers;
+    int layer = 0;
+    
+    vec2 currentTexCoords = texCoords;
+    for(int layer = 0; layer < numLayers; layer++)
+    {
+        float layerDepth = stepSize * layer;
+        float offsetMagnitude = (1 + layerDepth) * height_scale;
+        vec2 texOffset = viewDir.xy * offsetMagnitude;
+        currentTexCoords = texCoords - texOffset;
+        float currentDepthValue = texture(material.depth, currentTexCoords).r;
+
+        if(layerDepth > currentDepthValue)
+            break;
+    }
+
+    return currentTexCoords;
 }
 
 vec3 CalcDirLight(DirLight dirLight, vec3 normal)
